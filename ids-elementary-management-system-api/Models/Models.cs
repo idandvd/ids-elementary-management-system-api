@@ -103,8 +103,8 @@ namespace ids_elementary_management_system_api.Models
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public int MotherId { get; set; }
-        public int FatherId { get; set; }
+        public int? MotherId { get; set; }
+        public int? FatherId { get; set; }
         public int ClassId { get; set; }
         public int YearId { get; set; }
         public string PicturePath { get; set; }

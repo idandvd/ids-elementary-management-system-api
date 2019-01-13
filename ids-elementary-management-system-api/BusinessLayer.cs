@@ -3,36 +3,67 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Web;
 
 namespace ids_elementary_management_system_api
 {
     public class BusinessLayer
     {
-        public static IEnumerable<Student> GetClassStudents(int nClassID)
+        public static IEnumerable<Student> GetClassStudents(int classID)
         {
             DBConnection db = DBConnection.Instance;
-            DataTable dt = db.GetDataTableByQuery(" select concat(students.first_name,' ' ,students.last_name) as name," +
-                                                    " picture_path,concat(grades.grade_name,classes.class_number) as class," +
-                                                    " classes.id as class_id, students.id as student_id," +
-                                                    " mother.cellphone , concat(mother.first_name,' ' ,mother.last_name) as mother_name, mother.email," +
-                                                    " father.cellphone , concat(father.first_name,' ' ,father.last_name) as father_name, father.email," +
-                                                    " students.home_phone, students.settlement" +
+            DataTable dt = db.GetDataTableByQuery(" select students.* " +
                                                     " from students " +
                                                     " inner join classes on classes.id = students.class_id" +
                                                                         " and classes.year_id = (select value from preferences where name = 'current_year_id')" +
-
-                                                    " left join parents mother on mother.id = students.mother_id " +
-                                                    " left join parents father on father.id = students.father_id " +
-                                                    " inner join grades on grades.id = classes.grade_id" +
-                                                    " where classes.id = " + nClassID);
-            List<Student> lst = new List<Student>();
-            foreach (DataRow item in dt.Rows)
-            {
-                lst.Add(new Student() { FirstName = item["name"].ToString() });
-            }
+                                                    " where classes.id = " + classID);
+            List<Student> lst = DataTableToModel<Student>(dt);
             return lst;
         }
 
+        private static List<T> DataTableToModel<T>(DataTable table)
+        {
+            List<T> result = new List<T>();
+            Type type = typeof(T);
+            Dictionary<string, string> columns = new Dictionary<string, string>();
+            foreach (DataColumn currentColumn in table.Columns)
+            {
+                columns.Add(currentColumn.ColumnName, GetModelName(currentColumn.ColumnName));
+            }
+            foreach (DataRow currentRow in table.Rows)
+            {
+                T model = (T)Activator.CreateInstance(type);
+                foreach (KeyValuePair<string, string> currentColumn in columns)
+                {
+                    PropertyInfo property = type.GetProperty(currentColumn.Value, BindingFlags.Public | BindingFlags.Instance);
+                    property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null : currentRow[currentColumn.Key]);
+
+                }
+                result.Add(model);
+            }
+            return result;
+        }
+
+        private static string GetModelName(string columnName)
+        {
+            string modelName = string.Empty;
+            
+            bool isUpper = true;
+            for (int currentCharIndex = 0; currentCharIndex < columnName.Length; currentCharIndex++)
+            {
+                if (isUpper)
+                {
+                    modelName += char.ToUpper(columnName[currentCharIndex]);
+                    isUpper = false;
+                }
+                else
+                    if (columnName[currentCharIndex] == '_')
+                    isUpper = true;
+                else
+                    modelName += columnName[currentCharIndex];
+            }
+            return modelName;
+        }
     }
 }
