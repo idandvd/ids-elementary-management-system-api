@@ -21,6 +21,7 @@ namespace ids_elementary_management_system_api
                                                     " from students " +
                                                     " inner join classes on classes.id = students.class_id" +
                                                                         " and classes.year_id = (select value from preferences where name = 'current_year_id')" +
+
                                                     " left join parents mother on mother.id = students.mother_id " +
                                                     " left join parents father on father.id = students.father_id " +
                                                     " inner join grades on grades.id = classes.grade_id" +
@@ -28,7 +29,7 @@ namespace ids_elementary_management_system_api
             List<Student> lst = new List<Student>();
             foreach (DataRow item in dt.Rows)
             {
-                lst.Add(new Student() { Name = item["name"].ToString() });
+                lst.Add(new Student() { FirstName = item["name"].ToString() });
             }
             return lst;
         }

@@ -31,6 +31,5 @@ c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-sy
 c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\bin\System.Net.Http.Formatting.xml
 c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\bin\System.Web.Http.xml
 c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\bin\System.Web.Http.WebHost.xml
-c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Debug\ids-elementary-management-system-api.csprojResolveAssemblyReference.cache
 c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Debug\ids-elementary-management-system-api.dll
 c:\users\idan\documents\visual studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Debug\ids-elementary-management-system-api.pdb
