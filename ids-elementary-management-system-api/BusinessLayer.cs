@@ -13,19 +13,18 @@ namespace ids_elementary_management_system_api
         {
             DBConnection db = DBConnection.Instance;
             DataTable dt = db.GetDataTableByQuery(" select concat(students.first_name,' ' ,students.last_name) as name," +
-                                        " picture_path,concat(grades.grade_name,classes.class_number) as class," +
-                                        " classes.id as class_id, students.id as student_id," +
-                                        " students.mother_cellphone, students.mother_full_name," +
-                                        " students.father_cellphone, students.father_full_name," +
-                                        " students.home_phone, students.parents_email," +
-                                        " students.settlement" +
-                                        " from students " +
-                                        " inner join students_classes on students_classes.student_id = students.id" +
-                                        " inner join classes on classes.id = students_classes.class_id" +
-                                        " inner join teachers on teachers.id = classes.teacher_id " +
-                                        " and teachers.year_id = (select value from preferences where name = 'current_year_id')" +
-                                        " inner join grades on grades.id = classes.grade_id" +
-                                        " where classes.id = " + nClassID);
+                                                    " picture_path,concat(grades.grade_name,classes.class_number) as class," +
+                                                    " classes.id as class_id, students.id as student_id," +
+                                                    " mother.cellphone , concat(mother.first_name,' ' ,mother.last_name) as mother_name, mother.email," +
+                                                    " father.cellphone , concat(father.first_name,' ' ,father.last_name) as father_name, father.email," +
+                                                    " students.home_phone, students.settlement" +
+                                                    " from students " +
+                                                    " inner join classes on classes.id = students.class_id" +
+                                                                        " and classes.year_id = (select value from preferences where name = 'current_year_id')" +
+                                                    " left join parents mother on mother.id = students.mother_id " +
+                                                    " left join parents father on father.id = students.father_id " +
+                                                    " inner join grades on grades.id = classes.grade_id" +
+                                                    " where classes.id = " + nClassID);
             List<Student> lst = new List<Student>();
             foreach (DataRow item in dt.Rows)
             {

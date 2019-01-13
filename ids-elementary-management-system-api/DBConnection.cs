@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Web;
@@ -65,7 +66,7 @@ namespace ids_elementary_management_system_api
 
                     //if (HttpContext.Current.Request.IsLocal && Environment.MachineName == "IDAN-PC")
                     {
-                        strConnectionString = string.Format("Server=localhost; database={0}; UID=root; password=Aa5407582@", databaseName);
+                        strConnectionString = ConfigurationManager.ConnectionStrings["resheetDBConnectionString"].ConnectionString;
                     }
 
                     connection = new MySqlConnection(strConnectionString);

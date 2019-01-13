@@ -13,7 +13,7 @@ namespace ids_elementary_management_system_api.Controllers
         
         public IEnumerable<Student> GetAllStudents()
         {
-            return BusinessLayer.GetClassStudents(3);
+            return BusinessLayer.GetClassStudents(1);
         }
     }
 }
