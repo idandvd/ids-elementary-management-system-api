@@ -1,5 +1,6 @@
 ﻿using ids_elementary_management_system_api.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,6 +11,48 @@ namespace ids_elementary_management_system_api
 {
     public class BusinessLayer
     {
+        public static T GetRow<T>(string tableName, int id)
+        {
+            DBConnection db = DBConnection.Instance;
+            DataTable table = db.GetDataTableByQuery("select * from " + tableName + " where id = " + id);
+            if (table == null || table.Rows.Count == 0)
+                return default(T);
+            T result = DataTableToModel<T>(table).FirstOrDefault();
+            return result;
+        }
+
+        public static IEnumerable<T> GetTable<T>(string tableName)
+        {
+
+            DBConnection db = DBConnection.Instance;
+            DataTable table = db.GetDataTableByQuery("select * from " + tableName);
+            if (table == null)
+                return null;
+
+            List<T> result = DataTableToModel<T>(table);
+            return result;
+        }
+
+        //public static IEnumerable<object> GetTable(string tableName)
+        //{
+        //    string typeName = tableName.Substring(0, tableName.Length - 1);
+        //    if(typeName[typeName.Length-1] == 'e')
+        //        typeName = typeName.Substring(0, typeName.Length - 1);
+        //    Type type = Type.GetType("ids_elementary_management_system_api.Models." + typeName);
+
+        //    DBConnection db = DBConnection.Instance;
+        //    DataTable table = db.GetDataTableByQuery("select * from " + tableName);
+        //    if (table == null)
+        //        return null;
+             
+        //    MethodInfo method = typeof(BusinessLayer).GetMethod("DataTableToModel");
+        //    MethodInfo generic = method.MakeGenericMethod(type);
+
+        //    List<object> result  = ((IList) generic.Invoke(null, new object[] { table })).Cast<object>().ToList< object>();
+            
+        //    return result;
+        //}
+
         public static IEnumerable<Student> GetClassStudents(int classID)
         {
             DBConnection db = DBConnection.Instance;
@@ -22,7 +65,7 @@ namespace ids_elementary_management_system_api
             return lst;
         }
 
-        private static List<T> DataTableToModel<T>(DataTable table)
+        public static List<T> DataTableToModel<T>(DataTable table)
         {
             List<T> result = new List<T>();
             Type type = typeof(T);

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<parameters>
+  <parameter name="IIS Web Application Name" description="" value="resheetAPI/resheetAPI" tags="IisApp">
+    <parameterEntry kind="ProviderPath" scope="IisApp" match="^C:\\Users\\Idan\\Documents\\Visual\ Studio\ 2015\\Projects\\ids-elementary-management-system-api\\ids-elementary-management-system-api\\obj\\Release\\Package\\PackageTmp$" />
+    <parameterEntry kind="ProviderPath" scope="setAcl" match="^C:\\Users\\Idan\\Documents\\Visual\ Studio\ 2015\\Projects\\ids-elementary-management-system-api\\ids-elementary-management-system-api\\obj\\Release\\Package\\PackageTmp$" />
+  </parameter>
+  <parameter name="resheetDBConnectionString-Web.config Connection String" description="" value="Server=localhost; database=resheet; UID=root; password=Aa5407582@" tags="">
+    <parameterEntry kind="XmlFile" scope="C:\\Users\\Idan\\Documents\\Visual\ Studio\ 2015\\Projects\\ids-elementary-management-system-api\\ids-elementary-management-system-api\\obj\\Release\\Package\\PackageTmp\\Web\.config$" match="/configuration/connectionStrings/add[@name='resheetDBConnectionString']/@connectionString" />
+  </parameter>
+</parameters>

@@ -107,6 +107,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+    <None Include="Properties\PublishProfiles\ApiPublish.pubxml" />
+    <None Include="Properties\PublishProfiles\ApiPublishToIIS.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

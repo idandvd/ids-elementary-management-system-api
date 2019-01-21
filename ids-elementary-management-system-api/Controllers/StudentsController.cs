@@ -10,10 +10,306 @@ namespace ids_elementary_management_system_api.Controllers
 {
     public class StudentsController : ApiController
     {
-        
+        public IHttpActionResult GetStudent(int id)
+        {
+            Student result = BusinessLayer.GetRow<Student>("Students", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
         public IEnumerable<Student> GetAllStudents()
         {
-            return BusinessLayer.GetClassStudents(1);
+            return BusinessLayer.GetTable<Student>("Students");
         }
     }
+
+    public class ClassesController : ApiController
+    {
+        public IHttpActionResult GetClass(int id)
+        {
+            Class result = BusinessLayer.GetRow<Class>("Classes", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Class> GetAllClasses()
+        {
+            return BusinessLayer.GetTable<Class>("Classes");
+        }
+    }
+
+    public class ClassSchedulesController : ApiController
+    {
+        public IHttpActionResult GetClassSchedule(int id)
+        {
+            ClassSchedule result = BusinessLayer.GetRow<ClassSchedule>("Classes_Schedules", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<ClassSchedule> GetAllClassesSchedules()
+        {
+            return BusinessLayer.GetTable<ClassSchedule>("Classes_Schedules");
+        }
+    }
+
+    public class DaysController : ApiController
+    {
+        public IHttpActionResult GetStudent(int id)
+        {
+            Day result = BusinessLayer.GetRow<Day>("Days", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Day> GetAllStudents()
+        {
+            return BusinessLayer.GetTable<Day>("Days");
+        }
+    }
+
+    public class GradesController : ApiController
+    {
+        public IHttpActionResult GetGrades(int id)
+        {
+            Grade result = BusinessLayer.GetRow<Grade>("Grades", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Grade> GetAllGrades()
+        {
+            return BusinessLayer.GetTable<Grade>("Grades");
+        }
+    }
+
+    public class HoursInDayController : ApiController
+    {
+        public IHttpActionResult GetHoursInDay(int id)
+        {
+            HourInDay result = BusinessLayer.GetRow<HourInDay>("Hours_In_Day", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<HourInDay> GetAllHoursInDay()
+        {
+            return BusinessLayer.GetTable<HourInDay>("Hours_In_Day");
+        }
+    }
+
+    public class LessonTypesController : ApiController
+    {
+        public IHttpActionResult GetLessonType(int id)
+        {
+            LessonType result = BusinessLayer.GetRow<LessonType>("Lesson_types", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<LessonType> GetAllLessonTypes()
+        {
+            return BusinessLayer.GetTable<LessonType>("Lesson_types");
+        }
+    }
+
+    public class LessonsController : ApiController
+    {
+        public IHttpActionResult GetLesson(int id)
+        {
+            Lesson result = BusinessLayer.GetRow<Lesson>("Lessons", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Lesson> GetAllLessons()
+        {
+            return BusinessLayer.GetTable<Lesson>("Lessons");
+        }
+    }
+
+    public class LessonEvaluationsController : ApiController
+    {
+        public IHttpActionResult GetStudent(int id)
+        {
+            LessonEvaluation result = BusinessLayer.GetRow<LessonEvaluation>("Lesson_Evaluations", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<LessonEvaluation> GetAllStudents()
+        {
+            return BusinessLayer.GetTable<LessonEvaluation>("Lesson_Evaluations");
+        }
+    }
+
+    public class LessonGradesController : ApiController
+    {
+        public IHttpActionResult GetLessonGrade(int id)
+        {
+            LessonGrade result = BusinessLayer.GetRow<LessonGrade>("Lesson_Grades", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<LessonGrade> GetAllLessonGrades()
+        {
+            return BusinessLayer.GetTable<LessonGrade>("Lesson_Grades");
+        }
+    }
+
+    public class ParentsController : ApiController
+    {
+        public IHttpActionResult GetParent(int id)
+        {
+            Parent result = BusinessLayer.GetRow<Parent>("Parents", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Parent> GetAllParents()
+        {
+            return BusinessLayer.GetTable<Parent>("Parents");
+        }
+    }
+
+    public class PreferencesController : ApiController
+    {
+        public IHttpActionResult GetPreference(int id)
+        {
+            Preference result = BusinessLayer.GetRow<Preference>("Preferences", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Preference> GetAllPreferences()
+        {
+            return BusinessLayer.GetTable<Preference>("Preferences");
+        }
+    }
+
+    public class ReceivedSmsController : ApiController
+    {
+        public IHttpActionResult GetReceivedSms(int id)
+        {
+            ReceivedSms result = BusinessLayer.GetRow<ReceivedSms>("Received_Sms", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<ReceivedSms> GetAllReceivedSms()
+        {
+            return BusinessLayer.GetTable<ReceivedSms>("Received_Sms");
+        }
+    }
+
+    public class SentSmsController : ApiController
+    {
+        public IHttpActionResult GetSentSms(int id)
+        {
+            SentSms result = BusinessLayer.GetRow<SentSms>("Sent_Sms", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<SentSms> GetAllSentSms()
+        {
+            return BusinessLayer.GetTable<SentSms>("Sent_Sms");
+        }
+    }
+
+    public class StudentsSchedulesController : ApiController
+    {
+        public IHttpActionResult GetStudentSchedule(int id)
+        {
+            StudentSchedule result = BusinessLayer.GetRow<StudentSchedule>("Students_Schedules", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<StudentSchedule> GetAllStudentsSchedules()
+        {
+            return BusinessLayer.GetTable<StudentSchedule>("Students_Schedules");
+        }
+    }
+
+    public class TeacherClassAccessController : ApiController
+    {
+        public IHttpActionResult GetTeacherClassAccess(int id)
+        {
+            TeacherClassAccess result = BusinessLayer.GetRow<TeacherClassAccess>("Teacher_Class_Access", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<TeacherClassAccess> GetAllTeacherClassAccess()
+        {
+            return BusinessLayer.GetTable<TeacherClassAccess>("Teacher_Class_Access");
+        }
+    }
+
+    public class UserTypesController : ApiController
+    {
+        public IHttpActionResult GetUserType(int id)
+        {
+            UserType result = BusinessLayer.GetRow<UserType>("User_Types", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<UserType> GetAllUserTypes()
+        {
+            return BusinessLayer.GetTable<UserType>("User_Types");
+        }
+    }
+
+    public class UsersController : ApiController
+    {
+        public IHttpActionResult GetUser(int id)
+        {
+            User result = BusinessLayer.GetRow<User>("Users", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<User> GetAllUsers()
+        {
+            return BusinessLayer.GetTable<User>("Users");
+        }
+    }
+
+    public class YearsController : ApiController
+    {
+        public IHttpActionResult GetYear(int id)
+        {
+            Year result = BusinessLayer.GetRow<Year>("Years", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Year> GetAllYears()
+        {
+            return BusinessLayer.GetTable<Year>("Years");
+        }
+    }
+    
 }
