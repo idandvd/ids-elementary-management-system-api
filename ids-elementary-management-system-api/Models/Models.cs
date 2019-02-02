@@ -35,8 +35,8 @@ namespace ids_elementary_management_system_api.Models
     {
         public int Id { get; set; }
         public int HourOfSchoolDay { get; set; }
-        public int StartTime { get; set; }
-        public int FinishTime { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan FinishTime { get; set; }
         public int YearId { get; set; }
     }
     public class LessonType
@@ -154,7 +154,15 @@ namespace ids_elementary_management_system_api.Models
     public class Year
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public int Name { get; set; }
         public string HebrewYear { get; set; }
+    }
+    public class TableInformation
+    {
+        public string TableName { get; set; }
+    }
+    public class Controller
+    {
+        public string Name { get; set; }
     }
 }

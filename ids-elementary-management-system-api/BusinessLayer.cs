@@ -33,6 +33,27 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
+        public static int AddTeacherType(string name)
+        {
+            DBConnection db = DBConnection.Instance;
+            int newID = db.InsertData("insert into teacher_types(name) values('" + name + "')");
+            return newID;
+        }
+
+        public static IEnumerable<TableInformation> GetAllTablesInformation()
+        {
+
+            DBConnection db = DBConnection.Instance;
+            DataTable table = db.GetDataTableByQuery("select * from information_schema.tables where table_schema = 'reshit'");
+            if (table == null)
+                return null;
+
+            List<TableInformation> result = DataTableToModel<TableInformation>(table);
+            return result;
+        }
+
+        
+
         //public static IEnumerable<object> GetTable(string tableName)
         //{
         //    string typeName = tableName.Substring(0, tableName.Length - 1);
@@ -44,12 +65,12 @@ namespace ids_elementary_management_system_api
         //    DataTable table = db.GetDataTableByQuery("select * from " + tableName);
         //    if (table == null)
         //        return null;
-             
+
         //    MethodInfo method = typeof(BusinessLayer).GetMethod("DataTableToModel");
         //    MethodInfo generic = method.MakeGenericMethod(type);
 
         //    List<object> result  = ((IList) generic.Invoke(null, new object[] { table })).Cast<object>().ToList< object>();
-            
+
         //    return result;
         //}
 
@@ -80,7 +101,8 @@ namespace ids_elementary_management_system_api
                 foreach (KeyValuePair<string, string> currentColumn in columns)
                 {
                     PropertyInfo property = type.GetProperty(currentColumn.Value, BindingFlags.Public | BindingFlags.Instance);
-                    property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null : currentRow[currentColumn.Key]);
+                    if (property != null)
+                        property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null : currentRow[currentColumn.Key]);
 
                 }
                 result.Add(model);
@@ -91,7 +113,7 @@ namespace ids_elementary_management_system_api
         private static string GetModelName(string columnName)
         {
             string modelName = string.Empty;
-            
+
             bool isUpper = true;
             for (int currentCharIndex = 0; currentCharIndex < columnName.Length; currentCharIndex++)
             {
@@ -102,9 +124,9 @@ namespace ids_elementary_management_system_api
                 }
                 else
                     if (columnName[currentCharIndex] == '_')
-                    isUpper = true;
-                else
-                    modelName += columnName[currentCharIndex];
+                        isUpper = true;
+                    else
+                        modelName += char.ToLower(columnName[currentCharIndex]);
             }
             return modelName;
         }

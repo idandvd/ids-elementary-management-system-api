@@ -10,6 +10,9 @@ namespace ids_elementary_management_system_api
 {
     public class DBConnection
     {
+
+        private readonly object connectionLock = new object();
+
         private string databaseName = "reshit";
         private MySqlConnection connection = null;
         private static DBConnection _instance = null;
@@ -22,6 +25,7 @@ namespace ids_elementary_management_system_api
                 return _instance;
             }
         }
+
 
         public MySqlConnection Connection
         {
@@ -84,40 +88,65 @@ namespace ids_elementary_management_system_api
             connection.Close();
         }
 
+        public int InsertData(string query)
+        {
+            int nInsertID = 0;
+            lock (connectionLock)
+            {
+                Connect();
+                if (IsConnected)
+                {
+                    try
+                    {
+                        MySqlCommand command = new MySqlCommand(query, this.connection);
+                        command.ExecuteNonQuery();
+                        nInsertID = Convert.ToInt32(command.LastInsertedId);
+                    }
+                    catch (MySqlException e)
+                    {
+                        return nInsertID;
+                    }
+                }
+            }
+            return nInsertID;
+        }
 
         public DataTable GetDataTableByQuery(string strQuery, bool bWithKey = true)
         {
-            this.Connect();
-            DataTable dtTable = null;
-
-            if (this.IsConnected)
+            lock (connectionLock)
             {
-                try
+                this.Connect();
+                DataTable dtTable = null;
+
+                if (this.IsConnected)
                 {
-                    MySqlDataAdapter daAdapter = new MySqlDataAdapter(strQuery, connection);
-                    if (bWithKey)
+                    try
                     {
-                        daAdapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
+                        MySqlDataAdapter daAdapter = new MySqlDataAdapter(strQuery, connection);
+                        if (bWithKey)
+                        {
+                            daAdapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
+                        }
+                        dtTable = new DataTable();
+                        daAdapter.Fill(dtTable);
+
+                        //MySqlCommand command = new MySqlCommand(strQuery, this.connection);
+                        //command.ExecuteNonQuery();
                     }
-                    dtTable = new DataTable();
-                    daAdapter.Fill(dtTable);
+                    catch (MySqlException e)
+                    {
+                        return null;
+                    }
+                    finally
+                    {
+                        this.Close();
 
-                    //MySqlCommand command = new MySqlCommand(strQuery, this.connection);
-                    //command.ExecuteNonQuery();
+                    }
                 }
-                catch (MySqlException e)
-                {
-                    return null;
-                }
-                finally
-                {
-                    this.Close();
 
-                }
+                return dtTable;
             }
 
-
-            return dtTable;
         }
 
     }

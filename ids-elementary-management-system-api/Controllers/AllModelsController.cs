@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Web.Http;
 
 namespace ids_elementary_management_system_api.Controllers
@@ -264,6 +265,56 @@ namespace ids_elementary_management_system_api.Controllers
         }
     }
 
+    public class TeacherTypesController : ApiController
+    {
+        public IHttpActionResult GetTeacherType(int id)
+        {
+            TeacherType result = BusinessLayer.GetRow<TeacherType>("Teacher_Types", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<TeacherType> GetAllTeacherTypess()
+        {
+            return BusinessLayer.GetTable<TeacherType>("Teacher_Types");
+        }
+
+        [HttpPost]
+        public IHttpActionResult PostTeacherType(TeacherType item)
+        {
+            
+            int newID = BusinessLayer.AddTeacherType(item.Name);
+            if (newID == 0)
+                return Conflict("Duplicate " + item.GetType().Name);
+            return Ok();
+        }
+
+        //public IHttpActionResult AddTeacherType(string name)
+        //{
+        //    TeacherType result = BusinessLayer.GetRow<TeacherType>("Teacher_Types", id);
+        //    if (result == null)
+        //        return NotFound();
+        //    return Ok(result);
+        //}
+    }
+
+    public class TeachersController : ApiController
+    {
+        public IHttpActionResult GetTeacherClassAccess(int id)
+        {
+            Teacher result = BusinessLayer.GetRow<Teacher>("Teachers", id);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        public IEnumerable<Teacher> GetAllTeacherClassAccess()
+        {
+            return BusinessLayer.GetTable<Teacher>("Teachers");
+        }
+    }
+
     public class UserTypesController : ApiController
     {
         public IHttpActionResult GetUserType(int id)
@@ -311,5 +362,47 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<Year>("Years");
         }
     }
-    
+
+    public class TablesInformationController : ApiController
+    {
+        //public IHttpActionResult GetTable(string tableName)
+        //{
+        //    TableInformation result = BusinessLayer.GetTableInformation(tableName);
+        //    if (result == null)
+        //        return NotFound();
+        //    return Ok(result);
+        //}
+
+        public IEnumerable<TableInformation> GetAllTables()
+        {
+            return BusinessLayer.GetAllTablesInformation();
+        }
+    }
+    public class ControllersController : ApiController
+    {
+
+        //public IEnumerable<TableInformation> GetAllControllers2()
+        //{
+        //    //Type[]  t = GetTypesInNamespace();
+        //    return BusinessLayer.GetAllTablesInformation();
+        //}
+
+        public IEnumerable<Controller> GetAllControllers()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            string nameSpace = "ids_elementary_management_system_api.Controllers" ;
+            Type[]  types = assembly.GetTypes()
+                                    .Where(t => string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal))
+                                    .ToArray();
+            List<Controller> controllers = new List<Controller>();
+            foreach (Type currentType in types)
+            {
+                if(!currentType.Name.Contains("<") && !currentType.Name.Contains("ControllersController"))
+                    controllers.Add(new Controller() { Name = currentType.Name.Replace("Controller","") });
+            }
+            return controllers;
+              
+        }
+    }
+
 }
