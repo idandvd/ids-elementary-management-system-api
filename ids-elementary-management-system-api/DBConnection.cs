@@ -149,5 +149,10 @@ namespace ids_elementary_management_system_api
 
         }
 
+        public DataTable GetClassSchedule(int id)
+        {
+            return GetDataTableByQuery("select * from Classes_Schedules where class_id = " + id);
+        }
+
     }
 }

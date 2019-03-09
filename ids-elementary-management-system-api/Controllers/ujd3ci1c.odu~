@@ -1,7 +1,6 @@
 ﻿using ids_elementary_management_system_api.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -44,7 +43,6 @@ namespace ids_elementary_management_system_api.Controllers
 
     public class ClassSchedulesController : ApiController
     {
-
         public IHttpActionResult GetClassSchedule(int id)
         {
             ClassSchedule result = BusinessLayer.GetRow<ClassSchedule>("Classes_Schedules", id);
@@ -137,17 +135,6 @@ namespace ids_elementary_management_system_api.Controllers
         {
             return BusinessLayer.GetTable<Lesson>("Lessons");
         }
-
-        [HttpPost]
-        public IHttpActionResult PostLesson(Lesson item)
-        {
-
-            int newID = BusinessLayer.AddModel(item);
-            if (newID == 0)
-                return Conflict();
-            return Ok();
-        }
-
     }
 
     public class LessonEvaluationsController : ApiController
@@ -297,7 +284,7 @@ namespace ids_elementary_management_system_api.Controllers
         public IHttpActionResult PostTeacherType(TeacherType item)
         {
             
-            int newID = BusinessLayer.AddModel(item);
+            int newID = BusinessLayer.AddTeacherType(item.Name);
             if (newID == 0)
                 return Conflict();
             return Ok();
@@ -346,6 +333,7 @@ namespace ids_elementary_management_system_api.Controllers
 
     public class UsersController : ApiController
     {
+        [ActionName("CheckUserExists")]
         public IHttpActionResult GetUser(int id)
         {
             User result = BusinessLayer.GetRow<User>("Users", id);
@@ -359,14 +347,15 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<User>("Users");
         }
 
-        [HttpPost,Route("api/CheckUserExists/{username}/{password}")]
-        public IHttpActionResult CheckUserExists(string username,string password)
-        {
-            bool result = BusinessLayer.CheckUserExists(username, password);
-            if (!result)
-                return NotFound();
-            return Ok();
-        }
+        
+        //[ActionName("CheckUserExists")]
+        //public IHttpActionResult CheckUserExists(string username)
+        //{
+        //    bool result = BusinessLayer.CheckUserExists(username, "");
+        //    if (!result)
+        //        return NotFound();
+        //    return Ok();
+        //}
 
     }
 
@@ -420,27 +409,12 @@ namespace ids_elementary_management_system_api.Controllers
             List<Controller> controllers = new List<Controller>();
             foreach (Type currentType in types)
             {
-                if (!currentType.Name.Contains("<") && !currentType.Name.Contains("ControllersController")&&
-                    currentType.GetMethods().Where(m => m.Name.Contains("GetAll")).Count() > 0)
-                {
-                    controllers.Add(new Controller() { Name = currentType.Name.Replace("Controller", "") });
-                }
+                if(!currentType.Name.Contains("<") && !currentType.Name.Contains("ControllersController"))
+                    controllers.Add(new Controller() { Name = currentType.Name.Replace("Controller","") });
             }
             return controllers;
               
         }
     }
-    public class ClassScheduleTableController : ApiController
-    {
-        public IHttpActionResult GetClassSchedule(int id)
-        {
-            ClassScheduleTable result = BusinessLayer.GetClassSchedule(id);
-            if (result == null)
-                return NotFound();
-            return Ok(result);
-        }
-
-    }
-
 
 }

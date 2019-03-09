@@ -5,101 +5,129 @@ using System.Web;
 
 namespace ids_elementary_management_system_api.Models
 {
-    public class Class
+    public class Model
     {
+        public string TableName { get; set; }
+    }
+
+    public class Class : Model
+    {
+        public Class() { TableName = "classes"; }
         public int Id { get; set; }
-        public int GradeId { get; set; }
+        //public int GradeId { get; set; }
+        public Grade Grade { get; set; }
         public int Number { get; set; }
-        public int YearId { get; set; }
+        //public int YearId { get; set; }
+        public Year Year { get; set; }
     }
-    public class ClassSchedule
+    public class ClassSchedule : Model
     {
+        public ClassSchedule() { TableName = "classes_schedules"; }
         public int Id { get; set; }
-        public int DayId { get; set; }
-        public int HourId { get; set; }
-        public int LessonId { get; set; }
-        public int ClassId { get; set; }
+        //public int DayId { get; set; }
+        public Day Day { get; set; }
+        //public int HourId { get; set; }
+        public HourInDay Hour { get; set; }
+        //public int LessonId { get; set; }
+        public Lesson Lesson { get; set; }
+        //public int ClassId { get; set; }
+        public Class Class { get; set; }
     }
-    public class Day
+    public class Day : Model
     {
+        public Day() { TableName = "days"; }
         public int Id { get; set; }
         public string Name { get; set; }
     }
-    public class Grade
+    public class Grade : Model
     {
+        public Grade() { TableName = "grades"; }
         public int Id { get; set; }
         public string Name { get; set; }
         public int Number { get; set; }
     }
-    public class HourInDay
+    public class HourInDay : Model
     {
+        public HourInDay() { TableName = "hours_in_day"; }
         public int Id { get; set; }
         public int HourOfSchoolDay { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan FinishTime { get; set; }
+        public bool IsBreak { get; set; }
         public int YearId { get; set; }
     }
-    public class LessonType
+    public class LessonType : Model
     {
+        public LessonType() { TableName = "lesson_types"; }
         public int Id { get; set; }
         public string Name { get; set; }
     }
-    public class Lesson
+    public class Lesson : Model
     {
+        public Lesson() { TableName = "lessons"; }
         public int Id { get; set; }
         public string Name { get; set; }
-        public int TeacherId { get; set; }
-        public int LessonTypeId { get; set; }
+        //public int TeacherId { get; set; }
+        public Teacher Teacher { get; set; }
+        //public int LessonTypeId { get; set; }
+        public LessonType LessonType { get; set; }
         public int Priority { get; set; }
-        public int HasEvaluation { get; set; }
-        public int HasGrade { get; set; }
+        public bool HasEvaluation { get; set; }
+        public bool HasGrade { get; set; }
         public string Description { get; set; }
     }
-    public class LessonEvaluation
+    public class LessonEvaluation : Model
     {
+        public LessonEvaluation() { TableName = "lessons_evaluations"; }
         public int Id { get; set; }
         public string Evaluation { get; set; }
         public int LessonId { get; set; }
         public int StudentId { get; set; }
     }
-    public class LessonGrade
+    public class LessonGrade : Model
     {
+        public LessonGrade() { TableName = "lessons_grades"; }
         public int Id { get; set; }
         public float Grade { get; set; }
         public int LessonId { get; set; }
         public int StudentId { get; set; }
     }
-    public class Parent
+    public class Parent : Model
     {
+        public Parent() { TableName = "parents"; }
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Cellphone { get; set; }
         public string Email { get; set; }
     }
-    public class Preference
+    public class Preference : Model
     {
+        public Preference() { TableName = "preferences"; }
         public int Id { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
     }
-    public class ReceivedSms
+    public class ReceivedSms : Model
     {
+        public ReceivedSms() { TableName = "received_sms"; }
         public int Id { get; set; }
         public string ReceivedText { get; set; }
         public int StudentScheduleId { get; set; }
         public int ParentId { get; set; }
     }
-    public class SentSms
+    public class SentSms : Model
     {
+        public SentSms() { TableName = "sent_sms"; }
         public int Id { get; set; }
         public string SentText { get; set; }
         public int ConfirmationNumber { get; set; }
         public int StudentScheduleId { get; set; }
         public int ParentId { get; set; }
     }
-    public class Student
+    public class Student : Model
     {
+        public Student() { TableName = "students"; }
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -111,27 +139,31 @@ namespace ids_elementary_management_system_api.Models
         public string HomePhone { get; set; }
         public string Settlement { get; set; }
     }
-    public class StudentSchedule
+    public class StudentSchedule : Model
     {
+        public StudentSchedule() { TableName = "students_schedules"; }
         public int Id { get; set; }
         public int DayId { get; set; }
         public int HourId { get; set; }
         public int LessonId { get; set; }
         public int StudentId { get; set; }
     }
-    public class TeacherClassAccess
+    public class TeacherClassAccess : Model
     {
+        public TeacherClassAccess() { TableName = "teacher_class_access"; }
         public int Id { get; set; }
         public int TeacherId { get; set; }
         public int ClassId { get; set; }
     }
-    public class TeacherType
+    public class TeacherType : Model
     {
+        public TeacherType() { TableName = "teacher_types"; }
         public int Id { get; set; }
         public string Name { get; set; }
     }
-    public class Teacher
+    public class Teacher : Model
     {
+        public Teacher() { TableName = "teachers"; }
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -139,30 +171,44 @@ namespace ids_elementary_management_system_api.Models
         public int UserId { get; set; }
         public int YearId { get; set; }
     }
-    public class UserType
+    public class UserType : Model
     {
+        public UserType() { TableName = "user_types"; }
         public int Id { get; set; }
         public string Name { get; set; }
         public int AuthLevel { get; set; }
     }
-    public class User
+    public class User : Model
     {
+        public User() { TableName = "users"; }
         public int Id { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
     }
-    public class Year
+    public class Year : Model
     {
+        public Year() { TableName = "years"; }
         public int Id { get; set; }
         public int Name { get; set; }
         public string HebrewYear { get; set; }
     }
-    public class TableInformation
+    public class TableInformation : Model
     {
-        public string TableName { get; set; }
+        public TableInformation() { TableName = "days"; }
+        //public string TableName { get; set; }
     }
-    public class Controller
+    public class Controller : Model
     {
+        public Controller() { TableName = ""; }
         public string Name { get; set; }
     }
+
+    public class ClassScheduleTable:Model
+    {
+        public Class Class { get; set; }
+        public Dictionary<string,Lesson> ClassSchedules { get; set; }
+        public IEnumerable<HourInDay> HoursInDay { get; set; }
+        public IEnumerable<Day> Days { get; set; }
+    }
+
 }

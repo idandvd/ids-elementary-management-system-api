@@ -21,6 +21,21 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
+        public static bool CheckUserExists(string username,string password)
+        {
+            DBConnection db = DBConnection.Instance;
+            string sql_username = username.Replace("'", "''");
+            string sql_password = password.Replace("'", "''");
+            string sql_query = "select * from users " +
+                    " where username = '" + sql_username + "' " +
+                    " and password = '" + sql_password + "'";
+            DataTable table = db.GetDataTableByQuery(sql_query);
+
+            if (table == null || table.Rows.Count != 1)
+                return false;
+            return true;
+        }
+
         public static IEnumerable<T> GetTable<T>(string tableName)
         {
 
@@ -39,6 +54,48 @@ namespace ids_elementary_management_system_api
             int newID = db.InsertData("insert into teacher_types(name) values('" + name + "')");
             return newID;
         }
+
+        public static int AddModel(Model newItem)
+        {
+            DBConnection db = DBConnection.Instance;
+            Dictionary<string, string> columns = GetColumns(newItem);
+            string columnsNames = string.Join(",", columns.Keys);
+            string columnsValues = string.Join(",", columns.Values);
+            int newID = db.InsertData("insert into " + newItem.TableName+"("+ columnsNames + ") values(" + columnsValues + ")");
+            return newID;
+        }
+
+        private static Dictionary<string, string> GetColumns(Model model)
+        {
+            PropertyInfo[] properies = model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            for (int currentPropertyIndex = 0; currentPropertyIndex < properies.Length; currentPropertyIndex++)
+            {
+                PropertyInfo currentProperty = properies[currentPropertyIndex];
+                if (currentProperty.Name == "Id" || currentProperty.Name == "TableName") continue;
+                string columnName = GetColumnName(currentProperty.Name);
+                if (currentProperty.PropertyType.IsSubclassOf(typeof(Model)))
+                {
+                    columnName += "_id";
+                    Model subclass = (Model)currentProperty.GetValue(model);
+                    PropertyInfo idProperty = subclass.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
+                    string value = idProperty.GetValue(subclass).ToString();
+                    result[columnName] = value;
+                }
+                else
+                {
+                    if (currentProperty.GetValue(model).GetType() == typeof(string))
+                        result[columnName] = "'" + currentProperty.GetValue(model).ToString().Replace("'", "''") + "'";
+                    else if (currentProperty.GetValue(model).GetType() == typeof(bool))
+                        result[columnName] = ((bool)currentProperty.GetValue(model)) ?  "b'1'":"b'0'";
+                    else
+                        result[columnName] = currentProperty.GetValue(model).ToString();
+                }
+            }
+            return result;
+        }
+
+
 
         public static IEnumerable<TableInformation> GetAllTablesInformation()
         {
@@ -102,8 +159,28 @@ namespace ids_elementary_management_system_api
                 {
                     PropertyInfo property = type.GetProperty(currentColumn.Value, BindingFlags.Public | BindingFlags.Instance);
                     if (property != null)
-                        property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null : currentRow[currentColumn.Key]);
+                    {
+                        if (property.PropertyType.IsSubclassOf(typeof(Model)))
+                        {
 
+                            Model subModel = (Model)Activator.CreateInstance(property.PropertyType);
+
+                            string TableName = subModel.GetType().GetProperty("TableName").GetValue(subModel).ToString();
+                            subModel = (Model)
+                            typeof(BusinessLayer).GetMethod("GetRow")
+                                .MakeGenericMethod(property.PropertyType)
+                                .Invoke(null, new object[] { TableName, currentRow[currentColumn.Key] });
+
+
+                            property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null :
+                                    Convert.ChangeType(subModel, property.PropertyType));
+                        }
+                        else
+                        {
+                            property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null :
+                                            Convert.ChangeType(currentRow[currentColumn.Key], property.PropertyType));
+                        }
+                    }
                 }
                 result.Add(model);
             }
@@ -128,7 +205,48 @@ namespace ids_elementary_management_system_api
                     else
                         modelName += char.ToLower(columnName[currentCharIndex]);
             }
+            if (modelName.EndsWith("Id") && modelName.Length>2)
+                modelName = modelName.Substring(0, modelName.Length - 2);
             return modelName;
+        }
+
+        private static string GetColumnName(string propertyName)
+        {
+            string modelName = char.ToLower(propertyName[0]).ToString();
+            for (int currentCharIndex = 1; currentCharIndex < propertyName.Length; currentCharIndex++)
+            {
+                if (char.IsUpper(propertyName[currentCharIndex]))
+                    modelName += "_" + char.ToLower(propertyName[currentCharIndex]);
+                else
+                    modelName += propertyName[currentCharIndex];
+            }
+            return modelName;
+        }
+
+        public static ClassScheduleTable  GetClassSchedule(int id)
+        {
+            Class cls = GetRow<Class>("classes", id);
+            IEnumerable<HourInDay> hours = GetTable<HourInDay>("Hours_In_Day");
+            IEnumerable<Day> days = GetTable<Day>("days");
+            DBConnection db = DBConnection.Instance;
+            List<ClassSchedule> classSchedule = DataTableToModel<ClassSchedule>(db.GetClassSchedule(id));
+            Dictionary<string, Lesson> classScheduleLessons = new Dictionary<string, Lesson>();
+
+            foreach (ClassSchedule currentClassSchedule in classSchedule)
+            {
+                classScheduleLessons[currentClassSchedule.Day.Id + "$" +
+                                     currentClassSchedule.Hour.Id] = currentClassSchedule.Lesson;
+            }
+            ClassScheduleTable result = new ClassScheduleTable()
+            {
+                Class = cls,
+                HoursInDay = hours,
+                Days = days,
+                ClassSchedules = classScheduleLessons
+            };
+
+
+            return result;
         }
     }
 }
