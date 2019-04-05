@@ -1,4 +1,5 @@
 ﻿using ids_elementary_management_system_api.Models;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Web;
 using System.Web.Http;
 
 namespace ids_elementary_management_system_api.Controllers
@@ -23,6 +25,40 @@ namespace ids_elementary_management_system_api.Controllers
         public IEnumerable<Student> GetAllStudents()
         {
             return BusinessLayer.GetTable<Student>("Students");
+        }
+
+        [HttpPost,Route("api/Students/Import")]
+        public IHttpActionResult PostStudent()
+        {
+            if (HttpContext.Current.Request.Files.Count > 0)
+            {
+                var file = HttpContext.Current.Request.Files[0];
+                using (var excel = new ExcelPackage(file.InputStream))
+                {
+                    BusinessLayer.ImportStudents(excel);
+                }
+            }
+            return Ok();
+        }
+        [HttpPost]
+        public IHttpActionResult PostStudent(Student item)
+        {
+            if (item.Id == 0)
+            {
+                int newID = BusinessLayer.AddModel(item);
+                if (newID == 0)
+                    return Conflict();
+                else if (newID == -1)
+                    return InternalServerError();
+            }
+            else
+            {
+                bool editSucceeded= BusinessLayer.EditModel(item);
+                if (!editSucceeded)
+                    return InternalServerError();
+            }
+            return Ok();
+
         }
     }
 
@@ -141,7 +177,6 @@ namespace ids_elementary_management_system_api.Controllers
         [HttpPost]
         public IHttpActionResult PostLesson(Lesson item)
         {
-
             int newID = BusinessLayer.AddModel(item);
             if (newID == 0)
                 return Conflict();

@@ -1,4 +1,5 @@
 ﻿using ids_elementary_management_system_api.Models;
+using OfficeOpenXml;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,6 +12,51 @@ namespace ids_elementary_management_system_api
 {
     public class BusinessLayer
     {
+        private static List<Class> classes = null;
+        private static List<Grade> grades = null;
+        private static Year currentYear = null;
+        private static List<Parent> parents = null;
+
+        public static List<Class> Classes
+        {
+            get
+            {
+                if (classes == null)
+                    classes = GetTable<Class>("classes").ToList();
+                return classes;
+            }
+
+        }
+        public static List<Grade> Grades
+        {
+            get
+            {
+                if (grades == null)
+                    grades = GetTable<Grade>("grades").ToList();
+                return grades;
+            }
+
+        }
+        public static List<Parent> Parents
+        {
+            get
+            {
+                if (parents == null)
+                    parents = GetTable<Parent>("parents").ToList();
+                return parents;
+            }
+
+        }
+        public static Year CurrentYear
+        {
+            get
+            {
+                if( currentYear == null)
+                    currentYear = GetCurrentYear();
+                return currentYear;
+            }
+        }
+
         public static T GetRow<T>(string tableName, int id)
         {
             DBConnection db = DBConnection.Instance;
@@ -57,12 +103,35 @@ namespace ids_elementary_management_system_api
 
         public static int AddModel(Model newItem)
         {
-            DBConnection db = DBConnection.Instance;
-            Dictionary<string, string> columns = GetColumns(newItem);
-            string columnsNames = string.Join(",", columns.Keys);
-            string columnsValues = string.Join(",", columns.Values);
-            int newID = db.InsertData("insert into " + newItem.TableName+"("+ columnsNames + ") values(" + columnsValues + ")");
-            return newID;
+            try
+            {
+                DBConnection db = DBConnection.Instance;
+                Dictionary<string, string> columns = GetColumns(newItem);
+                string columnsNames = string.Join(",", columns.Keys);
+                string columnsValues = string.Join(",", columns.Values);
+                int newID = db.InsertData("insert into " + newItem.TableName + "(" + columnsNames + ") values(" + columnsValues + ")");
+                return newID;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+            
+        }
+
+        public static bool EditModel(Model model)
+        {
+            try
+            {
+                DBConnection db = DBConnection.Instance;
+                Dictionary<string, string> columns = GetColumns(model);
+                string setString = string.Join(",", columns.Select(col=> col.Key + "=" +col.Value).ToArray());
+                return db.UpdateData("update " + model.TableName + " set " + setString + " where id = " + model.Id); ;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private static Dictionary<string, string> GetColumns(Model model)
@@ -74,28 +143,38 @@ namespace ids_elementary_management_system_api
                 PropertyInfo currentProperty = properies[currentPropertyIndex];
                 if (currentProperty.Name == "Id" || currentProperty.Name == "TableName") continue;
                 string columnName = GetColumnName(currentProperty.Name);
-                if (currentProperty.PropertyType.IsSubclassOf(typeof(Model)))
+                if (currentProperty.PropertyType == typeof(Year))
+                {
+                    columnName += "_id";
+                    result[columnName] = CurrentYear.Id.ToString();
+                }
+                else if (currentProperty.PropertyType.IsSubclassOf(typeof(Model)))
                 {
                     columnName += "_id";
                     Model subclass = (Model)currentProperty.GetValue(model);
+                    if( subclass == null)
+                    {
+                        result[columnName] = "null";
+                        continue;
+                    }
                     PropertyInfo idProperty = subclass.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
                     string value = idProperty.GetValue(subclass).ToString();
+                    if (value == "0")
+                        value = AddModel(subclass).ToString();
                     result[columnName] = value;
                 }
                 else
                 {
-                    if (currentProperty.GetValue(model).GetType() == typeof(string))
-                        result[columnName] = "'" + currentProperty.GetValue(model).ToString().Replace("'", "''") + "'";
-                    else if (currentProperty.GetValue(model).GetType() == typeof(bool))
-                        result[columnName] = ((bool)currentProperty.GetValue(model)) ?  "b'1'":"b'0'";
+                    if (currentProperty.PropertyType == typeof(string))
+                        result[columnName] = "'" + (currentProperty.GetValue(model)?.ToString().Replace("'", "''") ?? "") + "'";
+                    else if (currentProperty.PropertyType == typeof(bool))
+                        result[columnName] = ((bool)currentProperty.GetValue(model)) ? "b'1'" : "b'0'";
                     else
-                        result[columnName] = currentProperty.GetValue(model).ToString();
+                        result[columnName] = currentProperty.GetValue(model)?.ToString() ?? "";
                 }
             }
             return result;
         }
-
-
 
         public static IEnumerable<TableInformation> GetAllTablesInformation()
         {
@@ -109,8 +188,102 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
-        
+        public static Class ImportClass(ExcelRange wsRow,
+                                        int currentRowIndex,
+                                        int gradeNameIndex,
+                                        int classNumberIndex)
+        {
+            string gradeName = wsRow[currentRowIndex, gradeNameIndex].Value.ToString().Trim();
+            int classNumber = Convert.ToInt32(wsRow[currentRowIndex, classNumberIndex].Value.ToString());
+            Class studentClass = Classes.FirstOrDefault(c => c.Grade.Name == gradeName &&
+                                                             c.Number == classNumber);
+            if (studentClass == null)
+            {
+                Class newClass = new Class()
+                {
+                    Grade = Grades.FirstOrDefault(grade => grade.Name == gradeName),
+                    Number = classNumber,
+                    Year = CurrentYear,
+                };
+                newClass.Id = AddModel(newClass);
+                Classes.Add(newClass);
+                studentClass = newClass;
+            }
+            return studentClass;
+        }
 
+        public static Parent ImportParent(ExcelRange wsRow,
+                                          int currentRowIndex,
+                                          int firstNameIndex,
+                                          int lastNameIndex,
+                                          int cellphoneIndex,
+                                          int emailIndex,
+                                          string gender)
+        {
+            string firstName = (wsRow[currentRowIndex, firstNameIndex].Value ?? string.Empty).ToString();
+            string lastName = (wsRow[currentRowIndex, lastNameIndex].Value ?? string.Empty).ToString();
+            string cellphone = (wsRow[currentRowIndex, cellphoneIndex].Value ?? string.Empty).ToString().Trim();
+            string email = (wsRow[currentRowIndex, emailIndex].Value ?? string.Empty).ToString();
+            Parent studentParent = Parents.FirstOrDefault(p => p.FirstName == cellphone &&
+                                                               p.LastName == cellphone &&
+                                                               p.Cellphone == cellphone &&
+                                                               p.Email == email &&
+                                                               p.Gender == gender);
+            if (studentParent == null)
+            {
+                Parent newParent = new Parent()
+                {
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Cellphone = cellphone,
+                    Email = email,
+                    Gender = gender
+                };
+                newParent.Id = AddModel(newParent);
+                Parents.Add(newParent);
+                studentParent = newParent;
+            }
+            return studentParent;
+        }
+
+        public static void ImportStudents(ExcelPackage excel)
+        {
+            ExcelWorksheet ws = excel.Workbook.Worksheets.First();
+            int rowCnt = ws.Dimension.End.Row;
+            for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
+            {
+                ExcelRange wsRow = ws.Cells[currentRowIndex, 1, currentRowIndex, ws.Dimension.End.Column];
+                Class studentClass = ImportClass(wsRow, currentRowIndex, 5, 6);
+                Parent studentMother = ImportParent(wsRow, currentRowIndex, 7, 8, 9, 10,"female");
+                Parent studentFather = ImportParent(wsRow, currentRowIndex, 11, 12, 13, 14,"male");
+                Student newStudent = new Student()
+                {
+                    FirstName = (wsRow[currentRowIndex, 1].Value ?? string.Empty).ToString(),
+                    LastName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString(),
+                    HomePhone = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString(),
+                    Settlement = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString(),
+                    Class = studentClass,
+                    Mother = studentMother,
+                    Father = studentFather,
+                    Year = CurrentYear,
+                    PicturePath = "",
+                };
+                AddModel(newStudent);
+            }
+        }
+
+        public static Year GetCurrentYear()
+        {
+            int yearId = Convert.ToInt32(GetPreference("current_year_id"));
+            return GetRow<Year>("years", yearId);
+        }
+
+        public static string GetPreference(string preferenceName)
+        {
+            DBConnection db = DBConnection.Instance;
+            DataTable table = db.GetDataTableByQuery("select value from preferences where name='" + preferenceName + "'");
+            return table.Rows[0][0].ToString();
+        }
         //public static IEnumerable<object> GetTable(string tableName)
         //{
         //    string typeName = tableName.Substring(0, tableName.Length - 1);
@@ -165,6 +338,12 @@ namespace ids_elementary_management_system_api
 
                             Model subModel = (Model)Activator.CreateInstance(property.PropertyType);
 
+                            if (currentRow[currentColumn.Key] == DBNull.Value)
+                            {
+                                property.SetValue(model, null);
+                                continue;
+                            }
+
                             string TableName = subModel.GetType().GetProperty("TableName").GetValue(subModel).ToString();
                             subModel = (Model)
                             typeof(BusinessLayer).GetMethod("GetRow")
@@ -172,8 +351,7 @@ namespace ids_elementary_management_system_api
                                 .Invoke(null, new object[] { TableName, currentRow[currentColumn.Key] });
 
 
-                            property.SetValue(model, currentRow[currentColumn.Key] == DBNull.Value ? null :
-                                    Convert.ChangeType(subModel, property.PropertyType));
+                            property.SetValue(model, Convert.ChangeType(subModel, property.PropertyType));
                         }
                         else
                         {
