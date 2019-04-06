@@ -412,7 +412,7 @@ namespace ids_elementary_management_system_api
 
             foreach (ClassSchedule currentClassSchedule in classSchedule)
             {
-                classScheduleLessons[currentClassSchedule.Day.Id + "$" +
+                classScheduleLessons["Day" + currentClassSchedule.Day.Id + "$Hour" +
                                      currentClassSchedule.Hour.Id] = currentClassSchedule.Lesson;
             }
             ClassScheduleTable result = new ClassScheduleTable()
