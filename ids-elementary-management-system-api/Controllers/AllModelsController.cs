@@ -40,6 +40,7 @@ namespace ids_elementary_management_system_api.Controllers
             }
             return Ok();
         }
+
         [HttpPost]
         public IHttpActionResult PostStudent(Student item)
         {
@@ -93,6 +94,9 @@ namespace ids_elementary_management_system_api.Controllers
         {
             return BusinessLayer.GetTable<ClassSchedule>("Classes_Schedules");
         }
+
+        
+
     }
 
     public class DaysController : ApiController
@@ -323,7 +327,7 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
-        public IEnumerable<TeacherType> GetAllTeacherTypess()
+        public IEnumerable<TeacherType> GetAllTeacherTypes()
         {
             return BusinessLayer.GetTable<TeacherType>("Teacher_Types");
         }
@@ -475,6 +479,15 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
+        //[HttpPost, Route("api/ClassScheduleTable/Save")]
+        [HttpPost]
+        public IHttpActionResult PostClassScheduleTable(ClassScheduleTable ClassSchedules)
+        {
+            BusinessLayer.SaveClassSchedule(ClassSchedules);
+            return Ok();
+
+        }
+        
     }
 
 

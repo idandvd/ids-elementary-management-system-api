@@ -426,5 +426,30 @@ namespace ids_elementary_management_system_api
 
             return result;
         }
+
+        public static bool SaveClassSchedule(ClassScheduleTable classScheduleTable)
+        {
+            string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id+";";
+            query += "insert into classes_schedules(day_id,hour_id,lesson_id,class_id) values( ";
+
+            foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedules)
+            {
+                if(classSchedule.Value.Id != 0)
+                {
+                    string dayId = classSchedule.Key.Substring(3, 1);
+                    string hourId = classSchedule.Key.Substring(9);
+
+                    query += dayId + "," + hourId + "," + classSchedule.Value.Id + "," + classScheduleTable.Class.Id + "),(";
+                             
+                }
+                else
+                {
+                    Console.WriteLine("test");
+                }
+            }
+            query = query.Substring(0, query.Length - 2);
+            
+            return DBConnection.Instance.InsertData(query) !=0;
+        }
     }
 }
