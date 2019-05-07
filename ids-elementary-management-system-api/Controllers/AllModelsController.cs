@@ -1,4 +1,6 @@
 ﻿using ids_elementary_management_system_api.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,35 @@ using System.Web.Http;
 
 namespace ids_elementary_management_system_api.Controllers
 {
-    public class StudentsController : ApiController
+    public class BaseApiController : ApiController
+    {
+        protected Type modelType = typeof(Model);
+
+        [HttpPost]
+        public IHttpActionResult PostItem(JObject itemm)
+        {
+            Model item = (Model)itemm.ToObject(modelType);
+
+            if (item.Id == 0)
+            {
+                int newID = BusinessLayer.AddModel(item);
+                if (newID == 0)
+                    return Conflict();
+                else if (newID == -1)
+                    return InternalServerError();
+            }
+            else
+            {
+                bool editSucceeded = BusinessLayer.EditModel(item);
+                if (!editSucceeded)
+                    return InternalServerError();
+            }
+            return Ok();
+        }
+
+    }
+
+    public class StudentsController : BaseApiController
     {
         public IHttpActionResult GetStudent(int id)
         {
@@ -27,7 +57,7 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<Student>("Students");
         }
 
-        [HttpPost,Route("api/Students/Import")]
+        [HttpPost, Route("api/Students/Import")]
         public IHttpActionResult PostStudent()
         {
             if (HttpContext.Current.Request.Files.Count > 0)
@@ -54,12 +84,11 @@ namespace ids_elementary_management_system_api.Controllers
             }
             else
             {
-                bool editSucceeded= BusinessLayer.EditModel(item);
+                bool editSucceeded = BusinessLayer.EditModel(item);
                 if (!editSucceeded)
                     return InternalServerError();
             }
             return Ok();
-
         }
     }
 
@@ -95,7 +124,7 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<ClassSchedule>("Classes_Schedules");
         }
 
-        
+
 
     }
 
@@ -315,6 +344,12 @@ namespace ids_elementary_management_system_api.Controllers
         {
             return BusinessLayer.GetTable<TeacherClassAccess>("Teacher_Class_Access");
         }
+
+        [HttpPost]
+        public IHttpActionResult PostTeacherClassAccesses(List<TeacherClassAccess> teacherClassAccesses)
+        {
+            return Ok();
+        }
     }
 
     public class TeacherTypesController : ApiController
@@ -335,7 +370,7 @@ namespace ids_elementary_management_system_api.Controllers
         [HttpPost]
         public IHttpActionResult PostTeacherType(TeacherType item)
         {
-            
+
             int newID = BusinessLayer.AddModel(item);
             if (newID == 0)
                 return Conflict();
@@ -351,9 +386,14 @@ namespace ids_elementary_management_system_api.Controllers
         //}
     }
 
-    public class TeachersController : ApiController
+    public class TeachersController : BaseApiController
     {
-        public IHttpActionResult GetTeacherClassAccess(int id)
+        private TeachersController()
+        {
+            modelType = typeof(Teacher);
+        }
+
+        public IHttpActionResult GetTeacher(int id)
         {
             Teacher result = BusinessLayer.GetRow<Teacher>("Teachers", id);
             if (result == null)
@@ -361,10 +401,13 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
-        public IEnumerable<Teacher> GetAllTeacherClassAccess()
+        public IEnumerable<Teacher> GetAllTeachers()
         {
             return BusinessLayer.GetTable<Teacher>("Teachers");
         }
+
+
+
     }
 
     public class UserTypesController : ApiController
@@ -398,8 +441,8 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<User>("Users");
         }
 
-        [HttpPost,Route("api/CheckUserExists/{username}/{password}")]
-        public IHttpActionResult CheckUserExists(string username,string password)
+        [HttpPost, Route("api/CheckUserExists/{username}/{password}")]
+        public IHttpActionResult CheckUserExists(string username, string password)
         {
             bool result = BusinessLayer.CheckUserExists(username, password);
             if (!result)
@@ -452,21 +495,21 @@ namespace ids_elementary_management_system_api.Controllers
         public IEnumerable<Controller> GetAllControllers()
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
-            string nameSpace = "ids_elementary_management_system_api.Controllers" ;
-            Type[]  types = assembly.GetTypes()
+            string nameSpace = "ids_elementary_management_system_api.Controllers";
+            Type[] types = assembly.GetTypes()
                                     .Where(t => string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal))
                                     .ToArray();
             List<Controller> controllers = new List<Controller>();
             foreach (Type currentType in types)
             {
-                if (!currentType.Name.Contains("<") && !currentType.Name.Contains("ControllersController")&&
+                if (!currentType.Name.Contains("<") && !currentType.Name.Contains("ControllersController") &&
                     currentType.GetMethods().Where(m => m.Name.Contains("GetAll")).Count() > 0)
                 {
                     controllers.Add(new Controller() { Name = currentType.Name.Replace("Controller", "") });
                 }
             }
             return controllers;
-              
+
         }
     }
     public class ClassScheduleTableController : ApiController
@@ -487,8 +530,5 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
 
         }
-        
     }
-
-
 }

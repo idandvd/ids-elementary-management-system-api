@@ -7,22 +7,39 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Web;
+using System.Web.Http;
 
 namespace ids_elementary_management_system_api
 {
+    public class FromLocalData : Attribute
+    {
+        public string LocalDataListName { get; set; }
+        public string ForeignKey { get; set; }
+        public string ColumnName { get; set; }
+
+        public FromLocalData(string localDataListName, string foreignKey, string columnName)
+        {
+            TableName = localDataListName;
+            ForeignKey = foreignKey;
+            ColumnName = columnName;
+        }
+    }
+
     public class BusinessLayer
     {
         private static List<Class> classes = null;
         private static List<Grade> grades = null;
-        private static Year currentYear = null;
         private static List<Parent> parents = null;
+        private static List<Teacher> teachers = null;
+        private static List<TeacherClassAccess> teacherClassAccesses = null;
+        private static Year currentYear = null;
 
         public static List<Class> Classes
         {
             get
             {
                 if (classes == null)
-                    classes = GetTable<Class>("classes").ToList();
+                    classes = GetTable<Class>("classes", true).ToList();
                 return classes;
             }
 
@@ -32,7 +49,7 @@ namespace ids_elementary_management_system_api
             get
             {
                 if (grades == null)
-                    grades = GetTable<Grade>("grades").ToList();
+                    grades = GetTable<Grade>("grades", true).ToList();
                 return grades;
             }
 
@@ -42,23 +59,65 @@ namespace ids_elementary_management_system_api
             get
             {
                 if (parents == null)
-                    parents = GetTable<Parent>("parents").ToList();
+                    parents = GetTable<Parent>("parents", true).ToList();
                 return parents;
             }
 
+        }
+        public static List<Teacher> Teachers
+        {
+            get
+            {
+                if (teachers == null)
+                {
+                    teachers = GetTable<Teacher>("teachers", true).ToList();
+                    FillInnerRelation(teachers.ConvertAll(teacher => (Model)teacher), typeof(Teacher));
+                }
+                return teachers;
+            }
+
+        }
+        public static List<TeacherClassAccess> TeacherClassAccesses
+        {
+            get
+            {
+                if (teacherClassAccesses == null)
+                    teacherClassAccesses = GetTable<TeacherClassAccess>("teacher_class_access", true).ToList();
+                return teacherClassAccesses;
+            }
         }
         public static Year CurrentYear
         {
             get
             {
-                if( currentYear == null)
+                if (currentYear == null)
                     currentYear = GetCurrentYear();
                 return currentYear;
             }
         }
 
+        private static IEnumerable<T> TryGetLocalData<T>()
+        {
+            Type type = typeof(T);
+            T model = (T)Activator.CreateInstance(type);
+            PropertyInfo piListName = type.GetProperty("ListName", BindingFlags.Public | BindingFlags.Instance);
+            if (piListName != null && piListName.GetValue(model) != null && piListName.GetValue(model).ToString() != "")
+            {
+                string listName = piListName.GetValue(model).ToString();
+                PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(listName);
+                List<T> localDataList = (List<T>)piLocalDataList.GetValue(null);
+                if (localDataList != null)
+                    return localDataList;
+            }
+            return null;
+        }
+
         public static T GetRow<T>(string tableName, int id)
         {
+            IEnumerable<T> localDataList = TryGetLocalData<T>();
+            if (localDataList != null)
+                return localDataList.Cast<Model>().Where(item => item.Id == id).Cast<T>().FirstOrDefault();
+
             DBConnection db = DBConnection.Instance;
             DataTable table = db.GetDataTableByQuery("select * from " + tableName + " where id = " + id);
             if (table == null || table.Rows.Count == 0)
@@ -67,7 +126,7 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
-        public static bool CheckUserExists(string username,string password)
+        public static bool CheckUserExists(string username, string password)
         {
             DBConnection db = DBConnection.Instance;
             string sql_username = username.Replace("'", "''");
@@ -82,16 +141,22 @@ namespace ids_elementary_management_system_api
             return true;
         }
 
-        public static IEnumerable<T> GetTable<T>(string tableName)
+        public static IEnumerable<T> GetTable<T>(string tableName, bool isFromProperty = false)
         {
+            if (!isFromProperty)
+            {
+                IEnumerable<T> localDataList = TryGetLocalData<T>();
+                if (localDataList != null)
+                    return localDataList;
+            }
 
             DBConnection db = DBConnection.Instance;
             DataTable table = db.GetDataTableByQuery("select * from " + tableName);
             if (table == null)
                 return null;
-
             List<T> result = DataTableToModel<T>(table);
             return result;
+
         }
 
         public static int AddTeacherType(string name)
@@ -116,7 +181,7 @@ namespace ids_elementary_management_system_api
             {
                 return -1;
             }
-            
+
         }
 
         public static bool EditModel(Model model)
@@ -125,7 +190,7 @@ namespace ids_elementary_management_system_api
             {
                 DBConnection db = DBConnection.Instance;
                 Dictionary<string, string> columns = GetColumns(model);
-                string setString = string.Join(",", columns.Select(col=> col.Key + "=" +col.Value).ToArray());
+                string setString = string.Join(",", columns.Select(col => col.Key + "=" + col.Value).ToArray());
                 return db.UpdateData("update " + model.TableName + " set " + setString + " where id = " + model.Id); ;
             }
             catch (Exception)
@@ -133,6 +198,8 @@ namespace ids_elementary_management_system_api
                 return false;
             }
         }
+
+
 
         private static Dictionary<string, string> GetColumns(Model model)
         {
@@ -152,7 +219,7 @@ namespace ids_elementary_management_system_api
                 {
                     columnName += "_id";
                     Model subclass = (Model)currentProperty.GetValue(model);
-                    if( subclass == null)
+                    if (subclass == null)
                     {
                         result[columnName] = "null";
                         continue;
@@ -254,8 +321,8 @@ namespace ids_elementary_management_system_api
             {
                 ExcelRange wsRow = ws.Cells[currentRowIndex, 1, currentRowIndex, ws.Dimension.End.Column];
                 Class studentClass = ImportClass(wsRow, currentRowIndex, 5, 6);
-                Parent studentMother = ImportParent(wsRow, currentRowIndex, 7, 8, 9, 10,"female");
-                Parent studentFather = ImportParent(wsRow, currentRowIndex, 11, 12, 13, 14,"male");
+                Parent studentMother = ImportParent(wsRow, currentRowIndex, 7, 8, 9, 10, "female");
+                Parent studentFather = ImportParent(wsRow, currentRowIndex, 11, 12, 13, 14, "male");
                 Student newStudent = new Student()
                 {
                     FirstName = (wsRow[currentRowIndex, 1].Value ?? string.Empty).ToString(),
@@ -360,9 +427,51 @@ namespace ids_elementary_management_system_api
                         }
                     }
                 }
+
+                //here
                 result.Add(model);
             }
+
             return result;
+        }
+
+        private static void FillInnerRelation(List<Model> items, Type type)
+        {
+
+            List<PropertyInfo> fromLocalDataPropertyList =
+                  type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(prop => Attribute.IsDefined(prop, typeof(FromLocalData))).ToList();
+
+            foreach (Model model in items)
+            {
+                foreach (PropertyInfo piFromLocalData in fromLocalDataPropertyList)
+                {
+                    string localDataListName = piFromLocalData.CustomAttributes.First().ConstructorArguments[0].Value.ToString();
+                    string foreignKey = piFromLocalData.CustomAttributes.First().ConstructorArguments[1].Value.ToString();
+                    string columnName = piFromLocalData.CustomAttributes.First().ConstructorArguments[2].Value.ToString();
+                    PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(localDataListName);
+                    IList iLocalDataList = piLocalDataList.GetValue(null) as IList;
+
+                    //if(columnName =="All")
+                    //{
+                    //    property.SetValue(model, listProperty.GetValue(property));  
+                    //    continue;
+                    //}
+
+                    PropertyInfo piColumn = piLocalDataList.PropertyType.GetGenericArguments()[0].GetProperty(columnName);
+
+                    Type listOfType = piFromLocalData.PropertyType.GetGenericArguments().Single();
+                    Type listType = typeof(List<>).MakeGenericType(listOfType);
+                    IList newList = Activator.CreateInstance(listType) as IList;
+                    foreach (var listItem in iLocalDataList)
+                    {
+                        object columnData = piColumn.GetValue(listItem);
+                        newList.Add(columnData);
+                    }
+
+                    piFromLocalData.SetValue(model, newList);
+
+                }
+            }
         }
 
         private static string GetModelName(string columnName)
@@ -379,11 +488,11 @@ namespace ids_elementary_management_system_api
                 }
                 else
                     if (columnName[currentCharIndex] == '_')
-                        isUpper = true;
-                    else
-                        modelName += char.ToLower(columnName[currentCharIndex]);
+                    isUpper = true;
+                else
+                    modelName += char.ToLower(columnName[currentCharIndex]);
             }
-            if (modelName.EndsWith("Id") && modelName.Length>2)
+            if (modelName.EndsWith("Id") && modelName.Length > 2)
                 modelName = modelName.Substring(0, modelName.Length - 2);
             return modelName;
         }
@@ -401,7 +510,7 @@ namespace ids_elementary_management_system_api
             return modelName;
         }
 
-        public static ClassScheduleTable  GetClassSchedule(int id)
+        public static ClassScheduleTable GetClassSchedule(int id)
         {
             Class cls = GetRow<Class>("classes", id);
             IEnumerable<HourInDay> hours = GetTable<HourInDay>("Hours_In_Day");
@@ -429,18 +538,18 @@ namespace ids_elementary_management_system_api
 
         public static bool SaveClassSchedule(ClassScheduleTable classScheduleTable)
         {
-            string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id+";";
+            string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id + ";";
             query += "insert into classes_schedules(day_id,hour_id,lesson_id,class_id) values( ";
 
             foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedules)
             {
-                if(classSchedule.Value.Id != 0)
+                if (classSchedule.Value.Id != 0)
                 {
                     string dayId = classSchedule.Key.Substring(3, 1);
                     string hourId = classSchedule.Key.Substring(9);
 
                     query += dayId + "," + hourId + "," + classSchedule.Value.Id + "," + classScheduleTable.Class.Id + "),(";
-                             
+
                 }
                 else
                 {
@@ -448,8 +557,14 @@ namespace ids_elementary_management_system_api
                 }
             }
             query = query.Substring(0, query.Length - 2);
-            
-            return DBConnection.Instance.InsertData(query) !=0;
+
+            return DBConnection.Instance.InsertData(query) != 0;
         }
+
+        //public static bool SaveTeacherClassAccesses(List<TeacherClassAccess> teacherClassAccesses)
+        //{
+        //    string query = "delete from teacher_class_access where teacher_id = " + teacherClassAccesses.Class.Id + ";";
+
+        //}
     }
 }

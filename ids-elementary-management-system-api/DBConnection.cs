@@ -113,7 +113,7 @@ namespace ids_elementary_management_system_api
 
         public bool UpdateData(string query)
         {
-            
+
             lock (connectionLock)
             {
                 Connect();
