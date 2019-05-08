@@ -30,6 +30,27 @@ namespace ids_elementary_management_system_api.Controllers
                     return Conflict();
                 else if (newID == -1)
                     return InternalServerError();
+                item.Id = newID;
+            }
+            else
+            {
+                bool editSucceeded = BusinessLayer.EditModel(item);
+                if (!editSucceeded)
+                    return InternalServerError();
+            }
+            return Ok();
+        }
+
+        public IHttpActionResult SaveItem(Model item)
+        {
+            if (item.Id == 0)
+            {
+                int newID = BusinessLayer.AddModel(item);
+                if (newID == 0)
+                    return Conflict();
+                else if (newID == -1)
+                    return InternalServerError();
+                item.Id = newID;
             }
             else
             {
@@ -401,11 +422,30 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
+        [HttpGet]
         public IEnumerable<Teacher> GetAllTeachers()
         {
             return BusinessLayer.GetTable<Teacher>("Teachers");
         }
 
+        [HttpPost, Route("api/Teachers/Save")]
+        public IHttpActionResult PostTeacher(Teacher teacher)
+        {
+            IHttpActionResult result = SaveItem(teacher);
+            if(result.GetType() == typeof(System.Web.Http.Results.OkResult))
+            {
+                if(!BusinessLayer.SaveTeacherClassAccesses(teacher))
+                {
+                    return InternalServerError();
+                }
+            }
+            else
+            {
+                return InternalServerError();
+            }
+            
+            return Ok();
+        }
 
 
     }

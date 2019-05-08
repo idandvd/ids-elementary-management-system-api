@@ -19,7 +19,7 @@ namespace ids_elementary_management_system_api
 
         public FromLocalData(string localDataListName, string foreignKey, string columnName)
         {
-            TableName = localDataListName;
+            LocalDataListName = localDataListName;
             ForeignKey = foreignKey;
             ColumnName = columnName;
         }
@@ -42,6 +42,7 @@ namespace ids_elementary_management_system_api
                     classes = GetTable<Class>("classes", true).ToList();
                 return classes;
             }
+            set { classes = null; }
 
         }
         public static List<Grade> Grades
@@ -52,6 +53,7 @@ namespace ids_elementary_management_system_api
                     grades = GetTable<Grade>("grades", true).ToList();
                 return grades;
             }
+            set { grades = null; }
 
         }
         public static List<Parent> Parents
@@ -62,6 +64,7 @@ namespace ids_elementary_management_system_api
                     parents = GetTable<Parent>("parents", true).ToList();
                 return parents;
             }
+            set { parents = null; }
 
         }
         public static List<Teacher> Teachers
@@ -75,7 +78,7 @@ namespace ids_elementary_management_system_api
                 }
                 return teachers;
             }
-
+            set { teachers = null;}
         }
         public static List<TeacherClassAccess> TeacherClassAccesses
         {
@@ -85,6 +88,7 @@ namespace ids_elementary_management_system_api
                     teacherClassAccesses = GetTable<TeacherClassAccess>("teacher_class_access", true).ToList();
                 return teacherClassAccesses;
             }
+            set { teacherClassAccesses = null;}
         }
         public static Year CurrentYear
         {
@@ -175,6 +179,12 @@ namespace ids_elementary_management_system_api
                 string columnsNames = string.Join(",", columns.Keys);
                 string columnsValues = string.Join(",", columns.Values);
                 int newID = db.InsertData("insert into " + newItem.TableName + "(" + columnsNames + ") values(" + columnsValues + ")");
+                if (newItem.ListName != null && newItem.ListName != "")
+                {
+                    PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(newItem.ListName);
+                    piLocalDataList.SetValue(null, null);
+                }
+                newItem.Id = newID;
                 return newID;
             }
             catch (Exception)
@@ -191,15 +201,48 @@ namespace ids_elementary_management_system_api
                 DBConnection db = DBConnection.Instance;
                 Dictionary<string, string> columns = GetColumns(model);
                 string setString = string.Join(",", columns.Select(col => col.Key + "=" + col.Value).ToArray());
-                return db.UpdateData("update " + model.TableName + " set " + setString + " where id = " + model.Id); ;
+                
+                
+                
+                if (model.ListName != null && model.ListName != "")
+                {
+                    PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(model.ListName);
+                    piLocalDataList.SetValue(null,null);
+                }
+                return db.UpdateData("update " + model.TableName + " set " + setString + " where id = " + model.Id);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 return false;
             }
         }
 
+        //private static void UpdateRealtions(Model model)
+        //{
+        //    PropertyInfo[] properies = model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        //    properies = properies.Where(property => property.CustomAttributes.Count() > 0).ToArray();
+        //    foreach (PropertyInfo currentProperty in properies)
+        //    {
+        //        CustomAttributeData attribute = currentProperty.CustomAttributes.FirstOrDefault();
+        //        if (attribute.AttributeType == typeof(FromLocalData))
+        //        {
+        //            string localDataListName = attribute.ConstructorArguments[0].Value.ToString();
+        //            string foreignKey = attribute.ConstructorArguments[1].Value.ToString();
+        //            string columnName = attribute.ConstructorArguments[2].Value.ToString();
+        //            PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(localDataListName);
+        //            IList iLocalDataList = piLocalDataList.GetValue(null) as IList;
+        //            piLocalDataList.PropertyType.GetGenericArguments()[0].GetType();
+        //            Model relatedModel = (Model)Activator.CreateInstance(piLocalDataList.PropertyType.GetGenericArguments()[0]);
+        //            PropertyInfo piForeignKey = piLocalDataList.PropertyType.GetGenericArguments()[0].GetProperty(foreignKey);
+        //            string foreignKeyIdColumnName = GetColumnName(foreignKey) + "_id";
+        //            string deleteQuery = "delete from " + relatedModel.TableName + " where " + foreignKeyIdColumnName + " = " + model.Id;
+        //            string insertQuery = "insert into " + relatedModel.TableName + ""
 
+
+
+        //        }
+        //    }
+        //}
 
         private static Dictionary<string, string> GetColumns(Model model)
         {
@@ -208,7 +251,8 @@ namespace ids_elementary_management_system_api
             for (int currentPropertyIndex = 0; currentPropertyIndex < properies.Length; currentPropertyIndex++)
             {
                 PropertyInfo currentProperty = properies[currentPropertyIndex];
-                if (currentProperty.Name == "Id" || currentProperty.Name == "TableName") continue;
+                if (currentProperty.Name == "Id" || currentProperty.Name == "TableName" ||
+                    currentProperty.Name == "ListName" ) continue;
                 string columnName = GetColumnName(currentProperty.Name);
                 if (currentProperty.PropertyType == typeof(Year))
                 {
@@ -229,6 +273,11 @@ namespace ids_elementary_management_system_api
                     if (value == "0")
                         value = AddModel(subclass).ToString();
                     result[columnName] = value;
+                }
+                else if(currentProperty.CustomAttributes.Count()> 0 &&
+                    currentProperty.CustomAttributes.FirstOrDefault().AttributeType == typeof(FromLocalData))
+                {
+                    continue;
                 }
                 else
                 {
@@ -458,14 +507,19 @@ namespace ids_elementary_management_system_api
                     //}
 
                     PropertyInfo piColumn = piLocalDataList.PropertyType.GetGenericArguments()[0].GetProperty(columnName);
+                    PropertyInfo piForeignKey = piLocalDataList.PropertyType.GetGenericArguments()[0].GetProperty(foreignKey);
 
                     Type listOfType = piFromLocalData.PropertyType.GetGenericArguments().Single();
                     Type listType = typeof(List<>).MakeGenericType(listOfType);
                     IList newList = Activator.CreateInstance(listType) as IList;
                     foreach (var listItem in iLocalDataList)
                     {
-                        object columnData = piColumn.GetValue(listItem);
-                        newList.Add(columnData);
+                        Model foreignKeyData = (Model)piForeignKey.GetValue(listItem);
+                        if (foreignKeyData.Id == model.Id)
+                        {
+                            object columnData = piColumn.GetValue(listItem);
+                            newList.Add(columnData);
+                        }
                     }
 
                     piFromLocalData.SetValue(model, newList);
@@ -558,13 +612,30 @@ namespace ids_elementary_management_system_api
             }
             query = query.Substring(0, query.Length - 2);
 
-            return DBConnection.Instance.InsertData(query) != 0;
+            return DBConnection.Instance.RunQuery(query) ;
         }
 
-        //public static bool SaveTeacherClassAccesses(List<TeacherClassAccess> teacherClassAccesses)
-        //{
-        //    string query = "delete from teacher_class_access where teacher_id = " + teacherClassAccesses.Class.Id + ";";
+        public static bool SaveTeacherClassAccesses(Teacher teacher)
+        {
+            string query = "delete from teacher_class_access where teacher_id = " + teacher.Id + "; ";
+            if (teacher.ClassAccess.Count > 0)
+            {
+                query += "insert into teacher_class_access(teacher_id,class_id) values(";
+                foreach (Class classAccess in teacher.ClassAccess)
+                {
+                    query += teacher.Id + "," + classAccess.Id + "),(";
 
-        //}
+                }
+                query = query.Substring(0, query.Length - 2);
+                query += ";";
+            }
+            bool result = DBConnection.Instance.RunQuery(query);
+            if(result)
+            {
+                TeacherClassAccesses = null;
+            }
+            return result;
+
+        }
     }
 }

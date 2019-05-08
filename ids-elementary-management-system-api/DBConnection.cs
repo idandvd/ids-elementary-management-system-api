@@ -111,6 +111,27 @@ namespace ids_elementary_management_system_api
             return nInsertID;
         }
 
+        public bool RunQuery(string query)
+        {
+            lock (connectionLock)
+            {
+                Connect();
+                if (IsConnected)
+                {
+                    try
+                    {
+                        MySqlCommand command = new MySqlCommand(query, this.connection);
+                        command.ExecuteNonQuery();
+                    }
+                    catch (MySqlException e)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         public bool UpdateData(string query)
         {
 
