@@ -197,5 +197,18 @@ namespace ids_elementary_management_system_api
             return GetDataTableByQuery("select * from Classes_Schedules where class_id = " + id);
         }
 
+        public string GetPreference(string preferenceName)
+        {
+            return GetStringByQuery("select value from preferences where name = '"+ preferenceName + "'");
+        }
+        public bool SetPreference(string preferenceName,string value)
+        {
+            return UpdateData("update preferences set value = '" + value + "' where name = '" + preferenceName + "';");
+        }
+        public string GetStringByQuery(string strQuery)
+        {
+            return GetDataTableByQuery(strQuery).Rows[0][0].ToString();
+        }
+
     }
 }

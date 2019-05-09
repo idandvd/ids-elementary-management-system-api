@@ -67,7 +67,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetStudent(int id)
         {
-            Student result = BusinessLayer.GetRow<Student>("Students", id);
+            Student result = BusinessLayer.GetRow<Student>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -75,7 +75,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Student> GetAllStudents()
         {
-            return BusinessLayer.GetTable<Student>("Students");
+            return BusinessLayer.GetTable<Student>();
         }
 
         [HttpPost, Route("api/Students/Import")]
@@ -117,7 +117,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetClass(int id)
         {
-            Class result = BusinessLayer.GetRow<Class>("Classes", id);
+            Class result = BusinessLayer.GetRow<Class>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -125,7 +125,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Class> GetAllClasses()
         {
-            return BusinessLayer.GetTable<Class>("Classes");
+            return BusinessLayer.GetTable<Class>();
         }
     }
 
@@ -134,7 +134,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IHttpActionResult GetClassSchedule(int id)
         {
-            ClassSchedule result = BusinessLayer.GetRow<ClassSchedule>("Classes_Schedules", id);
+            ClassSchedule result = BusinessLayer.GetRow<ClassSchedule>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -142,7 +142,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<ClassSchedule> GetAllClassesSchedules()
         {
-            return BusinessLayer.GetTable<ClassSchedule>("Classes_Schedules");
+            return BusinessLayer.GetTable<ClassSchedule>();
         }
 
 
@@ -153,7 +153,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetStudent(int id)
         {
-            Day result = BusinessLayer.GetRow<Day>("Days", id);
+            Day result = BusinessLayer.GetRow<Day>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -161,7 +161,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Day> GetAllStudents()
         {
-            return BusinessLayer.GetTable<Day>("Days");
+            return BusinessLayer.GetTable<Day>();
         }
     }
 
@@ -169,7 +169,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetGrades(int id)
         {
-            Grade result = BusinessLayer.GetRow<Grade>("Grades", id);
+            Grade result = BusinessLayer.GetRow<Grade>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -177,7 +177,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Grade> GetAllGrades()
         {
-            return BusinessLayer.GetTable<Grade>("Grades");
+            return BusinessLayer.GetTable<Grade>();
         }
     }
 
@@ -185,7 +185,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetHoursInDay(int id)
         {
-            HourInDay result = BusinessLayer.GetRow<HourInDay>("Hours_In_Day", id);
+            HourInDay result = BusinessLayer.GetRow<HourInDay>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -193,7 +193,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<HourInDay> GetAllHoursInDay()
         {
-            return BusinessLayer.GetTable<HourInDay>("Hours_In_Day");
+            return BusinessLayer.GetTable<HourInDay>();
         }
     }
 
@@ -201,7 +201,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetLessonType(int id)
         {
-            LessonType result = BusinessLayer.GetRow<LessonType>("Lesson_types", id);
+            LessonType result = BusinessLayer.GetRow<LessonType>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -209,7 +209,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<LessonType> GetAllLessonTypes()
         {
-            return BusinessLayer.GetTable<LessonType>("Lesson_types");
+            return BusinessLayer.GetTable<LessonType>();
         }
     }
 
@@ -217,7 +217,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetLesson(int id)
         {
-            Lesson result = BusinessLayer.GetRow<Lesson>("Lessons", id);
+            Lesson result = BusinessLayer.GetRow<Lesson>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -225,7 +225,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Lesson> GetAllLessons()
         {
-            return BusinessLayer.GetTable<Lesson>("Lessons");
+            return BusinessLayer.GetTable<Lesson>();
         }
 
         [HttpPost]
@@ -243,7 +243,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetStudent(int id)
         {
-            LessonEvaluation result = BusinessLayer.GetRow<LessonEvaluation>("Lesson_Evaluations", id);
+            LessonEvaluation result = BusinessLayer.GetRow<LessonEvaluation>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -251,7 +251,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<LessonEvaluation> GetAllStudents()
         {
-            return BusinessLayer.GetTable<LessonEvaluation>("Lesson_Evaluations");
+            return BusinessLayer.GetTable<LessonEvaluation>();
         }
     }
 
@@ -259,7 +259,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetLessonGrade(int id)
         {
-            LessonGrade result = BusinessLayer.GetRow<LessonGrade>("Lesson_Grades", id);
+            LessonGrade result = BusinessLayer.GetRow<LessonGrade>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -267,7 +267,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<LessonGrade> GetAllLessonGrades()
         {
-            return BusinessLayer.GetTable<LessonGrade>("Lesson_Grades");
+            return BusinessLayer.GetTable<LessonGrade>();
         }
     }
 
@@ -275,7 +275,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetParent(int id)
         {
-            Parent result = BusinessLayer.GetRow<Parent>("Parents", id);
+            Parent result = BusinessLayer.GetRow<Parent>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -283,7 +283,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Parent> GetAllParents()
         {
-            return BusinessLayer.GetTable<Parent>("Parents");
+            return BusinessLayer.GetTable<Parent>();
         }
     }
 
@@ -291,7 +291,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetPreference(int id)
         {
-            Preference result = BusinessLayer.GetRow<Preference>("Preferences", id);
+            Preference result = BusinessLayer.GetRow<Preference>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -299,7 +299,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Preference> GetAllPreferences()
         {
-            return BusinessLayer.GetTable<Preference>("Preferences");
+            return BusinessLayer.GetTable<Preference>();
         }
     }
 
@@ -307,7 +307,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetReceivedSms(int id)
         {
-            ReceivedSms result = BusinessLayer.GetRow<ReceivedSms>("Received_Sms", id);
+            ReceivedSms result = BusinessLayer.GetRow<ReceivedSms>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -315,7 +315,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<ReceivedSms> GetAllReceivedSms()
         {
-            return BusinessLayer.GetTable<ReceivedSms>("Received_Sms");
+            return BusinessLayer.GetTable<ReceivedSms>();
         }
     }
 
@@ -323,7 +323,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetSentSms(int id)
         {
-            SentSms result = BusinessLayer.GetRow<SentSms>("Sent_Sms", id);
+            SentSms result = BusinessLayer.GetRow<SentSms>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -331,7 +331,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<SentSms> GetAllSentSms()
         {
-            return BusinessLayer.GetTable<SentSms>("Sent_Sms");
+            return BusinessLayer.GetTable<SentSms>();
         }
     }
 
@@ -339,7 +339,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetStudentSchedule(int id)
         {
-            StudentSchedule result = BusinessLayer.GetRow<StudentSchedule>("Students_Schedules", id);
+            StudentSchedule result = BusinessLayer.GetRow<StudentSchedule>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -347,7 +347,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<StudentSchedule> GetAllStudentsSchedules()
         {
-            return BusinessLayer.GetTable<StudentSchedule>("Students_Schedules");
+            return BusinessLayer.GetTable<StudentSchedule>();
         }
     }
 
@@ -355,7 +355,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetTeacherClassAccess(int id)
         {
-            TeacherClassAccess result = BusinessLayer.GetRow<TeacherClassAccess>("Teacher_Class_Access", id);
+            TeacherClassAccess result = BusinessLayer.GetRow<TeacherClassAccess>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -363,7 +363,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<TeacherClassAccess> GetAllTeacherClassAccess()
         {
-            return BusinessLayer.GetTable<TeacherClassAccess>("Teacher_Class_Access");
+            return BusinessLayer.GetTable<TeacherClassAccess>();
         }
 
         [HttpPost]
@@ -377,7 +377,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetTeacherType(int id)
         {
-            TeacherType result = BusinessLayer.GetRow<TeacherType>("Teacher_Types", id);
+            TeacherType result = BusinessLayer.GetRow<TeacherType>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -385,7 +385,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<TeacherType> GetAllTeacherTypes()
         {
-            return BusinessLayer.GetTable<TeacherType>("Teacher_Types");
+            return BusinessLayer.GetTable<TeacherType>();
         }
 
         [HttpPost]
@@ -416,7 +416,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IHttpActionResult GetTeacher(int id)
         {
-            Teacher result = BusinessLayer.GetRow<Teacher>("Teachers", id);
+            Teacher result = BusinessLayer.GetRow<Teacher>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -425,16 +425,16 @@ namespace ids_elementary_management_system_api.Controllers
         [HttpGet]
         public IEnumerable<Teacher> GetAllTeachers()
         {
-            return BusinessLayer.GetTable<Teacher>("Teachers");
+            return BusinessLayer.GetTable<Teacher>();
         }
 
         [HttpPost, Route("api/Teachers/Save")]
         public IHttpActionResult PostTeacher(Teacher teacher)
         {
             IHttpActionResult result = SaveItem(teacher);
-            if(result.GetType() == typeof(System.Web.Http.Results.OkResult))
+            if (result.GetType() == typeof(System.Web.Http.Results.OkResult))
             {
-                if(!BusinessLayer.SaveTeacherClassAccesses(teacher))
+                if (!BusinessLayer.SaveTeacherClassAccesses(teacher))
                 {
                     return InternalServerError();
                 }
@@ -443,9 +443,23 @@ namespace ids_elementary_management_system_api.Controllers
             {
                 return InternalServerError();
             }
-            
+
             return Ok();
         }
+        [HttpPost, Route("api/Teachers/Import")]
+        public IHttpActionResult PostStudent()
+        {
+            if (HttpContext.Current.Request.Files.Count > 0)
+            {
+                var file = HttpContext.Current.Request.Files[0];
+                using (var excel = new ExcelPackage(file.InputStream))
+                {
+                    BusinessLayer.ImportTeachers(excel);
+                }
+            }
+            return Ok();
+        }
+
 
 
     }
@@ -454,7 +468,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetUserType(int id)
         {
-            UserType result = BusinessLayer.GetRow<UserType>("User_Types", id);
+            UserType result = BusinessLayer.GetRow<UserType>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -462,7 +476,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<UserType> GetAllUserTypes()
         {
-            return BusinessLayer.GetTable<UserType>("User_Types");
+            return BusinessLayer.GetTable<UserType>();
         }
     }
 
@@ -470,7 +484,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetUser(int id)
         {
-            User result = BusinessLayer.GetRow<User>("Users", id);
+            User result = BusinessLayer.GetRow<User>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -478,7 +492,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<User> GetAllUsers()
         {
-            return BusinessLayer.GetTable<User>("Users");
+            return BusinessLayer.GetTable<User>();
         }
 
         [HttpPost, Route("api/CheckUserExists/{username}/{password}")]
@@ -496,7 +510,7 @@ namespace ids_elementary_management_system_api.Controllers
     {
         public IHttpActionResult GetYear(int id)
         {
-            Year result = BusinessLayer.GetRow<Year>("Years", id);
+            Year result = BusinessLayer.GetRow<Year>(id);
             if (result == null)
                 return NotFound();
             return Ok(result);
@@ -504,7 +518,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Year> GetAllYears()
         {
-            return BusinessLayer.GetTable<Year>("Years");
+            return BusinessLayer.GetTable<Year>();
         }
     }
 

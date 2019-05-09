@@ -13,14 +13,33 @@ namespace ids_elementary_management_system_api.Models
         public string ListName { get; set; }
         public int Id { get; set; }
 
+
     }
 
     public class Class : Model
     {
-        public Class() { TableName = "classes"; }
+        public Class() { TableName = "classes"; ListName = "Classes"; }
         public Grade Grade { get; set; }
         public int Number { get; set; }
         public Year Year { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as Class;
+            if (item == null)
+            {
+                return false;
+            }
+            return Grade.Equals(item.Grade) &&
+                   Number.Equals(item.Number) &&
+                   Year.Equals(item.Year);
+        }
+        public override int GetHashCode()
+        {
+            return Grade.GetHashCode() * 13 * 13 +
+                   Number.GetHashCode() * 13 +
+                   Year.GetHashCode();
+        }
     }
     public class ClassSchedule : Model
     {
@@ -37,9 +56,23 @@ namespace ids_elementary_management_system_api.Models
     }
     public class Grade : Model
     {
-        public Grade() { TableName = "grades"; }
+        public Grade() { TableName = "grades"; ListName = "Grades"; }
         public string Name { get; set; }
         public int Number { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as Grade;
+            if (item == null)
+            {
+                return false;
+            }
+            return Number.Equals(item.Number);
+        }
+        public override int GetHashCode()
+        {
+            return Number.GetHashCode();
+        }
     }
     public class HourInDay : Model
     {
@@ -82,7 +115,7 @@ namespace ids_elementary_management_system_api.Models
     }
     public class Parent : Model
     {
-        public Parent() { TableName = "parents"; }
+        public Parent() { TableName = "parents"; ListName = "Parents"; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Cellphone { get; set; }
@@ -139,7 +172,7 @@ namespace ids_elementary_management_system_api.Models
     }
     public class TeacherType : Model
     {
-        public TeacherType() { TableName = "teacher_types"; }
+        public TeacherType() { TableName = "teacher_types"; ListName = "TeachersTypes"; }
         public string Name { get; set; }
     }
 
@@ -149,6 +182,7 @@ namespace ids_elementary_management_system_api.Models
         public Teacher() { TableName = "teachers"; ListName = "Teachers"; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string Cellphone { get; set; }
         public TeacherType TeacherType { get; set; }
         public User User { get; set; }
         public Year Year { get; set; }
@@ -168,12 +202,27 @@ namespace ids_elementary_management_system_api.Models
         public User() { TableName = "users"; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public UserType UserType { get; set; }
     }
     public class Year : Model
     {
         public Year() { TableName = "years"; }
         public int Name { get; set; }
         public string HebrewYear { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as Year;
+            if (item == null)
+            {
+                return false;
+            }
+            return Name.Equals(item.Name);
+        }
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
     }
     public class TableInformation : Model
     {
