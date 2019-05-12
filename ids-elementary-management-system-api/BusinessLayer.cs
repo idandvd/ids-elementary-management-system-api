@@ -27,13 +27,20 @@ namespace ids_elementary_management_system_api
 
     public class BusinessLayer
     {
+        #region Members
+
         private static List<Class> classes = null;
         private static List<Grade> grades = null;
         private static List<Parent> parents = null;
         private static List<Teacher> teachers = null;
         private static List<TeacherType> teacherTypes = null;
         private static List<TeacherClassAccess> teacherClassAccesses = null;
+        private static List<LessonType> lessonTypes = null;
         private static Year currentYear = null;
+
+        #endregion
+
+        #region Properties
 
         public static List<Class> Classes
         {
@@ -103,6 +110,16 @@ namespace ids_elementary_management_system_api
             }
             set { teacherClassAccesses = null; }
         }
+        public static List<LessonType> LessonTypes
+        {
+            get
+            {
+                if (lessonTypes == null)
+                    lessonTypes = GetTable<LessonType>(true).ToList();
+                return lessonTypes;
+            }
+            set { lessonTypes = null; }
+        }
         public static Year CurrentYear
         {
             get
@@ -113,26 +130,11 @@ namespace ids_elementary_management_system_api
             }
         }
 
-        private static IEnumerable<T> TryGetLocalData<T>()
-        {
-            string listName = GetStringProperty(typeof(T), "ListName");
-            if (listName != null && listName != string.Empty)
-            {
-                PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(listName);
-                List<T> localDataList = (List<T>)piLocalDataList.GetValue(null);
-                if (localDataList != null)
-                    return localDataList;
-            }
-            return null;
-        }
+        #endregion
 
-        private static string GetStringProperty(Type type, string PropertyName)
-        {
-            object model = Activator.CreateInstance(type);
-            PropertyInfo piListName = type.GetProperty(PropertyName, BindingFlags.Public | BindingFlags.Instance);
-            string value = piListName?.GetValue(model)?.ToString();
-            return value;
-        }
+        #region Public
+
+        #region Getters
 
         public static T GetRow<T>(int id)
         {
@@ -167,6 +169,64 @@ namespace ids_elementary_management_system_api
 
         }
 
+        public static Year GetCurrentYear()
+        {
+            int yearId = Convert.ToInt32(DBConnection.Instance.GetPreference("current_year_id"));
+            return GetRow<Year>(yearId);
+        }
+
+        public static IEnumerable<Student> GetClassStudents(int classID)
+        {
+            DBConnection db = DBConnection.Instance;
+            DataTable dt = db.GetDataTableByQuery(" select students.* " +
+                                                    " from students " +
+                                                    " inner join classes on classes.id = students.class_id" +
+                                                                        " and classes.year_id = (select value from preferences where name = 'current_year_id')" +
+                                                    " where classes.id = " + classID);
+            List<Student> lst = DataTableToModel<Student>(dt);
+            return lst;
+        }
+
+        public static IEnumerable<TableInformation> GetAllTablesInformation()
+        {
+
+            DBConnection db = DBConnection.Instance;
+            DataTable table = db.GetDataTableByQuery("select * from information_schema.tables where table_schema = 'reshit'");
+            if (table == null)
+                return null;
+
+            List<TableInformation> result = DataTableToModel<TableInformation>(table);
+            return result;
+        }
+
+        public static ClassScheduleTable GetClassSchedule(int id)
+        {
+            Class cls = GetRow<Class>(id);
+            IEnumerable<HourInDay> hours = GetTable<HourInDay>();
+            IEnumerable<Day> days = GetTable<Day>();
+            DBConnection db = DBConnection.Instance;
+            List<ClassSchedule> classSchedule = DataTableToModel<ClassSchedule>(db.GetClassSchedule(id));
+            Dictionary<string, Lesson> classScheduleLessons = new Dictionary<string, Lesson>();
+
+            foreach (ClassSchedule currentClassSchedule in classSchedule)
+            {
+                classScheduleLessons["Day" + currentClassSchedule.Day.Id + "$Hour" +
+                                     currentClassSchedule.Hour.Id] = currentClassSchedule.Lesson;
+            }
+            ClassScheduleTable result = new ClassScheduleTable()
+            {
+                Class = cls,
+                HoursInDay = hours,
+                Days = days,
+                ClassSchedules = classScheduleLessons
+            };
+
+
+            return result;
+        }
+
+        #endregion
+
         public static bool CheckUserExists(string username, string password)
         {
             DBConnection db = DBConnection.Instance;
@@ -180,14 +240,6 @@ namespace ids_elementary_management_system_api
             if (table == null || table.Rows.Count != 1)
                 return false;
             return true;
-        }
-
-
-        public static int AddTeacherType(string name)
-        {
-            DBConnection db = DBConnection.Instance;
-            int newID = db.InsertData("insert into teacher_types(name) values('" + name + "')");
-            return newID;
         }
 
         public static int AddModel(Model newItem)
@@ -235,123 +287,55 @@ namespace ids_elementary_management_system_api
             }
         }
 
-        private static Dictionary<string, string> GetColumns(Model model)
+        public static bool SaveClassSchedule(ClassScheduleTable classScheduleTable)
         {
-            PropertyInfo[] properies = model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            for (int currentPropertyIndex = 0; currentPropertyIndex < properies.Length; currentPropertyIndex++)
+            string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id + ";";
+            query += "insert into classes_schedules(day_id,hour_id,lesson_id,class_id) values( ";
+
+            foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedules)
             {
-                PropertyInfo currentProperty = properies[currentPropertyIndex];
-                if (currentProperty.Name == "Id" || currentProperty.Name == "TableName" ||
-                    currentProperty.Name == "ListName") continue;
-                string columnName = GetColumnName(currentProperty.Name);
-                if (currentProperty.PropertyType == typeof(Year))
+                if (classSchedule.Value.Id != 0)
                 {
-                    columnName += "_id";
-                    result[columnName] = CurrentYear.Id.ToString();
-                }
-                else if (currentProperty.PropertyType.IsSubclassOf(typeof(Model)))
-                {
-                    columnName += "_id";
-                    Model subclass = (Model)currentProperty.GetValue(model);
-                    if (subclass == null)
-                    {
-                        result[columnName] = "null";
-                        continue;
-                    }
-                    PropertyInfo idProperty = subclass.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
-                    string value = idProperty.GetValue(subclass).ToString();
-                    if (value == "0")
-                        value = AddModel(subclass).ToString();
-                    result[columnName] = value;
-                }
-                else if (currentProperty.CustomAttributes.Count() > 0 &&
-                    currentProperty.CustomAttributes.FirstOrDefault().AttributeType == typeof(FromLocalData))
-                {
-                    continue;
+                    string dayId = classSchedule.Key.Substring(3, 1);
+                    string hourId = classSchedule.Key.Substring(9);
+
+                    query += dayId + "," + hourId + "," + classSchedule.Value.Id + "," + classScheduleTable.Class.Id + "),(";
+
                 }
                 else
                 {
-                    if (currentProperty.PropertyType == typeof(string))
-                        result[columnName] = "'" + (currentProperty.GetValue(model)?.ToString().Replace("'", "''") ?? "") + "'";
-                    else if (currentProperty.PropertyType == typeof(bool))
-                        result[columnName] = ((bool)currentProperty.GetValue(model)) ? "b'1'" : "b'0'";
-                    else
-                        result[columnName] = currentProperty.GetValue(model)?.ToString() ?? "";
+                    Console.WriteLine("test");
                 }
             }
-            return result;
+            query = query.Substring(0, query.Length - 2);
+
+            return DBConnection.Instance.RunQuery(query);
         }
 
-        public static IEnumerable<TableInformation> GetAllTablesInformation()
+        public static bool SaveTeacherClassAccesses(Teacher teacher)
         {
-
-            DBConnection db = DBConnection.Instance;
-            DataTable table = db.GetDataTableByQuery("select * from information_schema.tables where table_schema = 'reshit'");
-            if (table == null)
-                return null;
-
-            List<TableInformation> result = DataTableToModel<TableInformation>(table);
-            return result;
-        }
-
-        public static Class ImportClass(ExcelRange wsRow,
-                                        int currentRowIndex,
-                                        int gradeNameIndex,
-                                        int classNumberIndex)
-        {
-            string gradeName = wsRow[currentRowIndex, gradeNameIndex].Value.ToString().Trim();
-            int classNumber = Convert.ToInt32(wsRow[currentRowIndex, classNumberIndex].Value.ToString());
-            Class studentClass = Classes.FirstOrDefault(c => c.Grade.Name == gradeName &&
-                                                             c.Number == classNumber);
-            if (studentClass == null)
+            string query = "delete from teacher_class_access where teacher_id = " + teacher.Id + "; ";
+            if (teacher.ClassAccess.Count > 0)
             {
-                Class newClass = new Class()
+                query += "insert into teacher_class_access(teacher_id,class_id) values(";
+                foreach (Class classAccess in teacher.ClassAccess)
                 {
-                    Grade = Grades.FirstOrDefault(grade => grade.Name == gradeName),
-                    Number = classNumber,
-                    Year = CurrentYear,
-                };
-                newClass.Id = AddModel(newClass);
-                //Classes.Add(newClass);
-                studentClass = newClass;
+                    query += teacher.Id + "," + classAccess.Id + "),(";
+
+                }
+                query = query.Substring(0, query.Length - 2);
+                query += ";";
             }
-            return studentClass;
+            bool result = DBConnection.Instance.RunQuery(query);
+            if (result)
+            {
+                TeacherClassAccesses = null;
+            }
+            return result;
+
         }
 
-        public static Parent ImportParent(ExcelRange wsRow,
-                                          int currentRowIndex,
-                                          int firstNameIndex,
-                                          int lastNameIndex,
-                                          int cellphoneIndex,
-                                          int emailIndex,
-                                          string gender)
-        {
-            string firstName = (wsRow[currentRowIndex, firstNameIndex].Value ?? string.Empty).ToString();
-            string lastName = (wsRow[currentRowIndex, lastNameIndex].Value ?? string.Empty).ToString();
-            string cellphone = (wsRow[currentRowIndex, cellphoneIndex].Value ?? string.Empty).ToString().Trim();
-            string email = (wsRow[currentRowIndex, emailIndex].Value ?? string.Empty).ToString();
-            Parent studentParent = Parents.FirstOrDefault(p => p.FirstName == cellphone &&
-                                                               p.LastName == cellphone &&
-                                                               p.Cellphone == cellphone &&
-                                                               p.Email == email &&
-                                                               p.Gender == gender);
-            if (studentParent == null)
-            {
-                Parent newParent = new Parent()
-                {
-                    FirstName = firstName,
-                    LastName = lastName,
-                    Cellphone = cellphone,
-                    Email = email,
-                    Gender = gender
-                };
-                newParent.Id = AddModel(newParent);
-                Parents.Add(newParent);
-                studentParent = newParent;
-            }
-            return studentParent;
-        }
+        #region Imports
 
         public static void ImportStudents(ExcelPackage excel)
         {
@@ -365,10 +349,10 @@ namespace ids_elementary_management_system_api
                 Parent studentFather = ImportParent(wsRow, currentRowIndex, 11, 12, 13, 14, "male");
                 Student newStudent = new Student()
                 {
-                    FirstName = (wsRow[currentRowIndex, 1].Value ?? string.Empty).ToString(),
-                    LastName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString(),
-                    HomePhone = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString(),
-                    Settlement = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString(),
+                    FirstName = (wsRow[currentRowIndex, 1].Value ?? string.Empty).ToString().Trim(),
+                    LastName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString().Trim(),
+                    HomePhone = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString().Trim(),
+                    Settlement = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString().Trim(),
                     Class = studentClass,
                     Mother = studentMother,
                     Father = studentFather,
@@ -379,51 +363,75 @@ namespace ids_elementary_management_system_api
             }
         }
 
-        public static Year GetCurrentYear()
+        public static void ImportTeachers(ExcelPackage excel)
         {
-            int yearId = Convert.ToInt32(GetPreference("current_year_id"));
-            return GetRow<Year>(yearId);
+            ExcelWorksheet ws = excel.Workbook.Worksheets.First();
+            int rowCnt = ws.Dimension.End.Row;
+            ImportTeacherTypes(ws, 5);
+            ImportClasses(ws, 6, 7);
+            int newUserNumber = Convert.ToInt32(DBConnection.Instance.GetPreference("current_new_user_number"));
+            UserType userType = GetRow<UserType>(2);
+            for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
+            {
+                ExcelRange wsRow = ws.Cells[currentRowIndex, 1, currentRowIndex, ws.Dimension.End.Column];
+                User newUser = new User()
+                {
+                    Username = "user" + newUserNumber,
+                    Password = "user" + newUserNumber,
+                    UserType = userType
+                };
+                newUserNumber++;
+                string teacherTypeName = (wsRow[currentRowIndex, 5].Value ?? string.Empty).ToString();
+
+                Teacher newTeacher = new Teacher()
+                {
+                    FirstName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString().Trim(),
+                    LastName = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString().Trim(),
+                    Cellphone = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString().Trim(),
+                    Year = CurrentYear,
+                    TeacherType = TeachersTypes.FirstOrDefault(teacherType => teacherType.Name == teacherTypeName),
+                    User = newUser
+
+                };
+
+                int newTeacherId = AddModel(newTeacher);
+                if (newTeacherId != -1)
+                {
+                    AddClassAccessesToNewTeacher(wsRow, currentRowIndex, newTeacher, 6, 7, teacherTypeName);
+                }
+            }
+            DBConnection.Instance.SetPreference("current_new_user_number", newUserNumber.ToString());
         }
 
-        public static string GetPreference(string preferenceName)
+        public static void ImportLessons(ExcelPackage excel)
         {
-            DBConnection db = DBConnection.Instance;
-            DataTable table = db.GetDataTableByQuery("select value from preferences where name='" + preferenceName + "'");
-            return table.Rows[0][0].ToString();
-        }
-        //public static IEnumerable<object> GetTable(string tableName)
-        //{
-        //    string typeName = tableName.Substring(0, tableName.Length - 1);
-        //    if(typeName[typeName.Length-1] == 'e')
-        //        typeName = typeName.Substring(0, typeName.Length - 1);
-        //    Type type = Type.GetType("ids_elementary_management_system_api.Models." + typeName);
-
-        //    DBConnection db = DBConnection.Instance;
-        //    DataTable table = db.GetDataTableByQuery("select * from " + tableName);
-        //    if (table == null)
-        //        return null;
-
-        //    MethodInfo method = typeof(BusinessLayer).GetMethod("DataTableToModel");
-        //    MethodInfo generic = method.MakeGenericMethod(type);
-
-        //    List<object> result  = ((IList) generic.Invoke(null, new object[] { table })).Cast<object>().ToList< object>();
-
-        //    return result;
-        //}
-
-        public static IEnumerable<Student> GetClassStudents(int classID)
-        {
-            DBConnection db = DBConnection.Instance;
-            DataTable dt = db.GetDataTableByQuery(" select students.* " +
-                                                    " from students " +
-                                                    " inner join classes on classes.id = students.class_id" +
-                                                                        " and classes.year_id = (select value from preferences where name = 'current_year_id')" +
-                                                    " where classes.id = " + classID);
-            List<Student> lst = DataTableToModel<Student>(dt);
-            return lst;
+            ExcelWorksheet ws = excel.Workbook.Worksheets.First();
+            int rowCnt = ws.Dimension.End.Row;
+            for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
+            {
+                ExcelRange wsRow = ws.Cells[currentRowIndex, 1, currentRowIndex, ws.Dimension.End.Column];
+                string teacherName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString().Trim();
+                string lessonTypeName = (wsRow[currentRowIndex, 6].Value ?? string.Empty).ToString().Trim();
+                Lesson newLesson = new Lesson()
+                {
+                    Name = (wsRow[currentRowIndex, 1].Value ?? string.Empty).ToString().Trim(),
+                    Teacher = Teachers.FirstOrDefault(teacher => (teacher.FirstName + " " + teacher.LastName).Equals(teacherName)),
+                    HasEvaluation = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString() == "כן",
+                    HasGrade = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString() == "כן",
+                    Description = (wsRow[currentRowIndex, 5].Value ?? string.Empty).ToString().Trim(),
+                    LessonType = LessonTypes.FirstOrDefault(lessonType => lessonType.Name.Equals(lessonTypeName))
+                };
+                int a = AddModel(newLesson);
+            }
         }
 
-        public static List<T> DataTableToModel<T>(DataTable table)
+        #endregion
+
+        #endregion
+
+        #region Private
+
+        private static List<T> DataTableToModel<T>(DataTable table)
         {
             List<T> result = new List<T>();
             Type type = typeof(T);
@@ -471,6 +479,77 @@ namespace ids_elementary_management_system_api
                 result.Add(model);
             }
 
+            return result;
+        }
+
+
+        private static IEnumerable<T> TryGetLocalData<T>()
+        {
+            string listName = GetStringProperty(typeof(T), "ListName");
+            if (listName != null && listName != string.Empty)
+            {
+                PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(listName);
+                List<T> localDataList = (List<T>)piLocalDataList.GetValue(null);
+                if (localDataList != null)
+                    return localDataList;
+            }
+            return null;
+        }
+
+        private static string GetStringProperty(Type type, string PropertyName)
+        {
+            object model = Activator.CreateInstance(type);
+            PropertyInfo piListName = type.GetProperty(PropertyName, BindingFlags.Public | BindingFlags.Instance);
+            string value = piListName?.GetValue(model)?.ToString();
+            return value;
+        }
+
+
+        private static Dictionary<string, string> GetColumns(Model model)
+        {
+            PropertyInfo[] properies = model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            for (int currentPropertyIndex = 0; currentPropertyIndex < properies.Length; currentPropertyIndex++)
+            {
+                PropertyInfo currentProperty = properies[currentPropertyIndex];
+                if (currentProperty.Name == "Id" || currentProperty.Name == "TableName" ||
+                    currentProperty.Name == "ListName") continue;
+                string columnName = GetColumnName(currentProperty.Name);
+                if (currentProperty.PropertyType == typeof(Year))
+                {
+                    columnName += "_id";
+                    result[columnName] = CurrentYear.Id.ToString();
+                }
+                else if (currentProperty.PropertyType.IsSubclassOf(typeof(Model)))
+                {
+                    columnName += "_id";
+                    Model subclass = (Model)currentProperty.GetValue(model);
+                    if (subclass == null)
+                    {
+                        result[columnName] = "null";
+                        continue;
+                    }
+                    PropertyInfo idProperty = subclass.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
+                    string value = idProperty.GetValue(subclass).ToString();
+                    if (value == "0")
+                        value = AddModel(subclass).ToString();
+                    result[columnName] = value;
+                }
+                else if (currentProperty.CustomAttributes.Count() > 0 &&
+                    currentProperty.CustomAttributes.FirstOrDefault().AttributeType == typeof(FromLocalData))
+                {
+                    continue;
+                }
+                else
+                {
+                    if (currentProperty.PropertyType == typeof(string))
+                        result[columnName] = "'" + (currentProperty.GetValue(model)?.ToString().Replace("'", "''") ?? "") + "'";
+                    else if (currentProperty.PropertyType == typeof(bool))
+                        result[columnName] = ((bool)currentProperty.GetValue(model)) ? "b'1'" : "b'0'";
+                    else
+                        result[columnName] = currentProperty.GetValue(model)?.ToString() ?? "";
+                }
+            }
             return result;
         }
 
@@ -554,119 +633,6 @@ namespace ids_elementary_management_system_api
             return modelName;
         }
 
-        public static ClassScheduleTable GetClassSchedule(int id)
-        {
-            Class cls = GetRow<Class>(id);
-            IEnumerable<HourInDay> hours = GetTable<HourInDay>();
-            IEnumerable<Day> days = GetTable<Day>();
-            DBConnection db = DBConnection.Instance;
-            List<ClassSchedule> classSchedule = DataTableToModel<ClassSchedule>(db.GetClassSchedule(id));
-            Dictionary<string, Lesson> classScheduleLessons = new Dictionary<string, Lesson>();
-
-            foreach (ClassSchedule currentClassSchedule in classSchedule)
-            {
-                classScheduleLessons["Day" + currentClassSchedule.Day.Id + "$Hour" +
-                                     currentClassSchedule.Hour.Id] = currentClassSchedule.Lesson;
-            }
-            ClassScheduleTable result = new ClassScheduleTable()
-            {
-                Class = cls,
-                HoursInDay = hours,
-                Days = days,
-                ClassSchedules = classScheduleLessons
-            };
-
-
-            return result;
-        }
-
-        public static bool SaveClassSchedule(ClassScheduleTable classScheduleTable)
-        {
-            string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id + ";";
-            query += "insert into classes_schedules(day_id,hour_id,lesson_id,class_id) values( ";
-
-            foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedules)
-            {
-                if (classSchedule.Value.Id != 0)
-                {
-                    string dayId = classSchedule.Key.Substring(3, 1);
-                    string hourId = classSchedule.Key.Substring(9);
-
-                    query += dayId + "," + hourId + "," + classSchedule.Value.Id + "," + classScheduleTable.Class.Id + "),(";
-
-                }
-                else
-                {
-                    Console.WriteLine("test");
-                }
-            }
-            query = query.Substring(0, query.Length - 2);
-
-            return DBConnection.Instance.RunQuery(query);
-        }
-
-        public static bool SaveTeacherClassAccesses(Teacher teacher)
-        {
-            string query = "delete from teacher_class_access where teacher_id = " + teacher.Id + "; ";
-            if (teacher.ClassAccess.Count > 0)
-            {
-                query += "insert into teacher_class_access(teacher_id,class_id) values(";
-                foreach (Class classAccess in teacher.ClassAccess)
-                {
-                    query += teacher.Id + "," + classAccess.Id + "),(";
-
-                }
-                query = query.Substring(0, query.Length - 2);
-                query += ";";
-            }
-            bool result = DBConnection.Instance.RunQuery(query);
-            if (result)
-            {
-                TeacherClassAccesses = null;
-            }
-            return result;
-
-        }
-
-        public static void ImportTeachers(ExcelPackage excel)
-        {
-            ExcelWorksheet ws = excel.Workbook.Worksheets.First();
-            int rowCnt = ws.Dimension.End.Row;
-            ImportTeacherTypes(ws, 5);
-            ImportClasses(ws, 6, 7);
-            int newUserNumber = Convert.ToInt32(DBConnection.Instance.GetPreference("current_new_user_number"));
-            UserType userType = GetRow<UserType>(2);
-            for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
-            {
-                ExcelRange wsRow = ws.Cells[currentRowIndex, 1, currentRowIndex, ws.Dimension.End.Column];
-                User newUser = new User()
-                {
-                    Username = "user" + newUserNumber,
-                    Password = "user" + newUserNumber,
-                    UserType = userType
-                };
-                newUserNumber++;
-                string teacherTypeName = (wsRow[currentRowIndex, 5].Value ?? string.Empty).ToString();
-
-                Teacher newTeacher = new Teacher()
-                {
-                    FirstName = (wsRow[currentRowIndex, 2].Value ?? string.Empty).ToString(),
-                    LastName = (wsRow[currentRowIndex, 3].Value ?? string.Empty).ToString(),
-                    Cellphone = (wsRow[currentRowIndex, 4].Value ?? string.Empty).ToString(),
-                    Year = CurrentYear,
-                    TeacherType = TeachersTypes.FirstOrDefault(teacherType => teacherType.Name == teacherTypeName),
-                    User = newUser
-
-                };
-
-                int newTeacherId = AddModel(newTeacher);
-                if (newTeacherId != -1)
-                {
-                    AddClassAccessesToNewTeacher(wsRow, currentRowIndex, newTeacher, 6, 7, teacherTypeName);
-                }
-            }
-            DBConnection.Instance.SetPreference("current_new_user_number", newUserNumber.ToString());
-        }
 
         private static void AddClassAccessesToNewTeacher(ExcelRange wsRow,
                                                          int currentRowIndex,
@@ -716,6 +682,68 @@ namespace ids_elementary_management_system_api
             }
         }
 
+        #region Imports
+
+
+        private static Class ImportClass(ExcelRange wsRow,
+                                int currentRowIndex,
+                                int gradeNameIndex,
+                                int classNumberIndex)
+        {
+            string gradeName = wsRow[currentRowIndex, gradeNameIndex].Value.ToString().Trim();
+            int classNumber = Convert.ToInt32(wsRow[currentRowIndex, classNumberIndex].Value.ToString().Trim());
+            Class studentClass = Classes.FirstOrDefault(c => c.Grade.Name == gradeName &&
+                                                             c.Number == classNumber);
+            if (studentClass == null)
+            {
+                Class newClass = new Class()
+                {
+                    Grade = Grades.FirstOrDefault(grade => grade.Name == gradeName),
+                    Number = classNumber,
+                    Year = CurrentYear,
+                };
+                newClass.Id = AddModel(newClass);
+                //Classes.Add(newClass);
+                studentClass = newClass;
+            }
+            return studentClass;
+        }
+
+        private static Parent ImportParent(ExcelRange wsRow,
+                                          int currentRowIndex,
+                                          int firstNameIndex,
+                                          int lastNameIndex,
+                                          int cellphoneIndex,
+                                          int emailIndex,
+                                          string gender)
+        {
+            string firstName = (wsRow[currentRowIndex, firstNameIndex].Value ?? string.Empty).ToString().Trim();
+            string lastName = (wsRow[currentRowIndex, lastNameIndex].Value ?? string.Empty).ToString().Trim();
+            string cellphone = (wsRow[currentRowIndex, cellphoneIndex].Value ?? string.Empty).ToString().Trim();
+            string email = (wsRow[currentRowIndex, emailIndex].Value ?? string.Empty).ToString().Trim();
+            Parent studentParent = Parents.FirstOrDefault(p => p.FirstName == cellphone &&
+                                                               p.LastName == cellphone &&
+                                                               p.Cellphone == cellphone &&
+                                                               p.Email == email &&
+                                                               p.Gender == gender);
+            if (studentParent == null)
+            {
+                Parent newParent = new Parent()
+                {
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Cellphone = cellphone,
+                    Email = email,
+                    Gender = gender
+                };
+                newParent.Id = AddModel(newParent);
+                Parents.Add(newParent);
+                studentParent = newParent;
+            }
+            return studentParent;
+        }
+
+
         private static void ImportTeacherTypes(ExcelWorksheet ws, int teacherTypeColumnIndex)
         {
             int rowCnt = ws.Dimension.End.Row;
@@ -723,7 +751,7 @@ namespace ids_elementary_management_system_api
             for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
             {
                 ExcelRange wsRow = ws.Cells[currentRowIndex, teacherTypeColumnIndex, currentRowIndex, teacherTypeColumnIndex];
-                newTeacherTypeNames.Add((wsRow[currentRowIndex, teacherTypeColumnIndex].Value ?? string.Empty).ToString());
+                newTeacherTypeNames.Add((wsRow[currentRowIndex, teacherTypeColumnIndex].Value ?? string.Empty).ToString().Trim());
 
             }
             newTeacherTypeNames = newTeacherTypeNames.Distinct().ToList();
@@ -744,9 +772,9 @@ namespace ids_elementary_management_system_api
             for (int currentRowIndex = 2; currentRowIndex <= rowCnt; currentRowIndex++)
             {
                 ExcelRange wsRow = ws.Cells[currentRowIndex, gradeNameColumnIndex, currentRowIndex, gradeNameColumnIndex];
-                string newGradeName = (wsRow[currentRowIndex, gradeNameColumnIndex].Value ?? string.Empty).ToString();
+                string newGradeName = (wsRow[currentRowIndex, gradeNameColumnIndex].Value ?? string.Empty).ToString().Trim();
                 wsRow = ws.Cells[currentRowIndex, classNumberColumnIndex, currentRowIndex, classNumberColumnIndex];
-                string newClassNumberString = (wsRow[currentRowIndex, classNumberColumnIndex].Value ?? string.Empty).ToString();
+                string newClassNumberString = (wsRow[currentRowIndex, classNumberColumnIndex].Value ?? string.Empty).ToString().Trim();
                 if (newGradeName != string.Empty && newClassNumberString != string.Empty)
                 {
                     int newClassNumber = Convert.ToInt32(newClassNumberString);
@@ -765,6 +793,10 @@ namespace ids_elementary_management_system_api
                 AddModel(newClass);
             }
         }
+
+        #endregion
+
+        #endregion
 
         #region not used
         //private static void UpdateRealtions(Model model)

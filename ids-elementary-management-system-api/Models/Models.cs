@@ -85,7 +85,7 @@ namespace ids_elementary_management_system_api.Models
     }
     public class LessonType : Model
     {
-        public LessonType() { TableName = "lesson_types"; }
+        public LessonType() { TableName = "lesson_types"; ListName = "LessonTypes"; }
         public string Name { get; set; }
     }
     public class Lesson : Model
@@ -175,8 +175,6 @@ namespace ids_elementary_management_system_api.Models
         public TeacherType() { TableName = "teacher_types"; ListName = "TeachersTypes"; }
         public string Name { get; set; }
     }
-
-
     public class Teacher : Model
     {
         public Teacher() { TableName = "teachers"; ListName = "Teachers"; }
@@ -233,7 +231,6 @@ namespace ids_elementary_management_system_api.Models
         public Controller() { TableName = ""; }
         public string Name { get; set; }
     }
-
     public class ClassScheduleTable : Model
     {
         public Class Class { get; set; }

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using System.Web;
 using System.Web.Http;
 
@@ -41,6 +42,7 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
         }
 
+        [NonAction]
         public IHttpActionResult SaveItem(Model item)
         {
             if (item.Id == 0)
@@ -92,25 +94,7 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        public IHttpActionResult PostStudent(Student item)
-        {
-            if (item.Id == 0)
-            {
-                int newID = BusinessLayer.AddModel(item);
-                if (newID == 0)
-                    return Conflict();
-                else if (newID == -1)
-                    return InternalServerError();
-            }
-            else
-            {
-                bool editSucceeded = BusinessLayer.EditModel(item);
-                if (!editSucceeded)
-                    return InternalServerError();
-            }
-            return Ok();
-        }
+
     }
 
     public class ClassesController : ApiController
@@ -213,8 +197,13 @@ namespace ids_elementary_management_system_api.Controllers
         }
     }
 
-    public class LessonsController : ApiController
+    public class LessonsController : BaseApiController
     {
+        private LessonsController()
+        {
+            modelType = typeof(Lesson);
+        }
+
         public IHttpActionResult GetLesson(int id)
         {
             Lesson result = BusinessLayer.GetRow<Lesson>(id);
@@ -228,12 +217,17 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<Lesson>();
         }
 
-        [HttpPost]
-        public IHttpActionResult PostLesson(Lesson item)
+        [HttpPost, Route("api/Lessons/Import")]
+        public IHttpActionResult PostLesson()
         {
-            int newID = BusinessLayer.AddModel(item);
-            if (newID == 0)
-                return Conflict();
+            if (HttpContext.Current.Request.Files.Count > 0)
+            {
+                var file = HttpContext.Current.Request.Files[0];
+                using (var excel = new ExcelPackage(file.InputStream))
+                {
+                    BusinessLayer.ImportLessons(excel);
+                }
+            }
             return Ok();
         }
 
@@ -447,7 +441,7 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
         }
         [HttpPost, Route("api/Teachers/Import")]
-        public IHttpActionResult PostStudent()
+        public IHttpActionResult PostTeachers()
         {
             if (HttpContext.Current.Request.Files.Count > 0)
             {
