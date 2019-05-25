@@ -489,13 +489,24 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<User>();
         }
 
-        [HttpPost, Route("api/CheckUserExists/{username}/{password}")]
-        public IHttpActionResult CheckUserExists(string username, string password)
+        [HttpPost, Route("api/CheckUserExists/{Username}/{Password}")]
+        public IHttpActionResult CheckUserExists(string Username, string Password)
         {
-            bool result = BusinessLayer.CheckUserExists(username, password);
+            bool result = BusinessLayer.CheckUserExists(Username, Password);
             if (!result)
                 return NotFound();
             return Ok();
+        }
+
+        [HttpPost, Route("api/Users/authenticate")]
+        public IHttpActionResult Authenticate(JObject User)
+        {
+            string username = User.GetValue("username").ToString();
+            string password = User.GetValue("password").ToString();
+            Teacher result = BusinessLayer.Authenticate(username, password);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
         }
 
     }
@@ -578,5 +589,14 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
 
         }
+
+        [HttpGet,Route("api/ClassScheduleTable/HasConflict/{DayId}/{HourId}/{TeacherId}/{ClassId}")]
+        public IHttpActionResult HasConflict(int DayId, int HourId,
+                                             int TeacherId, int ClassId)
+        {
+            bool hasConflict = BusinessLayer.HasConflict(DayId, HourId, TeacherId, ClassId);
+            return Ok(hasConflict);
+        }
+
     }
 }

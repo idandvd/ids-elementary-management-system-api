@@ -29,6 +29,7 @@ namespace ids_elementary_management_system_api
     {
         #region Members
 
+        private static List<ClassSchedule> classSchedules = null;
         private static List<Class> classes = null;
         private static List<Grade> grades = null;
         private static List<Parent> parents = null;
@@ -42,6 +43,17 @@ namespace ids_elementary_management_system_api
 
         #region Properties
 
+        public static List<ClassSchedule> ClassSchedules
+        {
+            get
+            {
+                if (classSchedules == null)
+                    classSchedules = GetTable<ClassSchedule>(true).ToList();
+                return classSchedules;
+            }
+            set { classSchedules = null; }
+
+        }
         public static List<Class> Classes
         {
             get
@@ -225,6 +237,16 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
+        public static bool HasConflict(int DayId, int HourId,
+                                       int TeacherId, int ClassId)
+        {
+            return ClassSchedules.Count(clsSched => clsSched.Day.Id == DayId &&
+                                             clsSched.Hour.Id == HourId &&
+                                             clsSched.Lesson.Teacher.Id == TeacherId &&
+                                             clsSched.Class.Id != ClassId
+                                             )>0;
+        }
+
         #endregion
 
         public static bool CheckUserExists(string username, string password)
@@ -240,6 +262,24 @@ namespace ids_elementary_management_system_api
             if (table == null || table.Rows.Count != 1)
                 return false;
             return true;
+        }
+
+        public static Teacher Authenticate(string username, string password)
+        {
+            DBConnection db = DBConnection.Instance;
+            string sql_username = username.Replace("'", "''");
+            string sql_password = password.Replace("'", "''");
+            string sql_query = "select * from users " +
+                    " where username = '" + sql_username + "' " +
+                    " and password = '" + sql_password + "'";
+            DataTable table = db.GetDataTableByQuery(sql_query);
+
+            if (table == null || table.Rows.Count != 1)
+                return null;
+
+            User AuthenticatedUser = DataTableToModel<User>(table)[0];
+            Teacher AuthenticatedTeacher = Teachers.FirstOrDefault(teacher => teacher.User.Id == AuthenticatedUser.Id);
+            return AuthenticatedTeacher;
         }
 
         public static int AddModel(Model newItem)
@@ -308,7 +348,7 @@ namespace ids_elementary_management_system_api
                 }
             }
             query = query.Substring(0, query.Length - 2);
-
+            ClassSchedules = null;
             return DBConnection.Instance.RunQuery(query);
         }
 
@@ -475,7 +515,7 @@ namespace ids_elementary_management_system_api
                     }
                 }
 
-                //here
+                
                 result.Add(model);
             }
 

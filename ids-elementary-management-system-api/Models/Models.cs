@@ -43,7 +43,7 @@ namespace ids_elementary_management_system_api.Models
     }
     public class ClassSchedule : Model
     {
-        public ClassSchedule() { TableName = "classes_schedules"; }
+        public ClassSchedule() { TableName = "classes_schedules"; ListName = "ClassSchedules"; }
         public Day Day { get; set; }
         public HourInDay Hour { get; set; }
         public Lesson Lesson { get; set; }
