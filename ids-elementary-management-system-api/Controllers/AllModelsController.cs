@@ -42,6 +42,15 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
         }
 
+
+        public IHttpActionResult DeleteItem(int id)
+        {
+            Model item = Activator.CreateInstance(modelType) as Model;
+            item.Id = id;
+            BusinessLayer.DeleteModel(item);
+            return Ok();
+        }
+
         [NonAction]
         public IHttpActionResult SaveItem(Model item)
         {
@@ -63,10 +72,16 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok();
         }
 
+
+
     }
 
     public class StudentsController : BaseApiController
     {
+        private StudentsController()
+        {
+            modelType = typeof(Student);
+        }
         public IHttpActionResult GetStudent(int id)
         {
             Student result = BusinessLayer.GetRow<Student>(id);
@@ -79,6 +94,14 @@ namespace ids_elementary_management_system_api.Controllers
         {
             return BusinessLayer.GetTable<Student>();
         }
+
+        [HttpGet, Route("api/Students/OfClass/{classId}")]
+        public IEnumerable<Student> StudentsOfClass(int classId)
+        {
+            return BusinessLayer.GetTable<Student>().
+                Where(student => classId == 0 || student.Class.Id == classId).ToList();
+        }
+
 
         [HttpPost, Route("api/Students/Import")]
         public IHttpActionResult PostStudent()
@@ -422,6 +445,18 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<Teacher>();
         }
 
+        [HttpGet, Route("api/Teachers/Schedule/{teacherId}")]
+        public IHttpActionResult GetTeacherSchedule(int teacherId)
+        {
+            return Ok(BusinessLayer.GetTeacherSchedule(teacherId));
+        }
+
+        [HttpGet, Route("api/Teachers/Class/{teacherId}")]
+        public IHttpActionResult GetTeacherClass(int teacherId)
+        {
+            return Ok(BusinessLayer.GetTeacherClass(teacherId));
+        }
+
         [HttpPost, Route("api/Teachers/Save")]
         public IHttpActionResult PostTeacher(Teacher teacher)
         {
@@ -440,6 +475,7 @@ namespace ids_elementary_management_system_api.Controllers
 
             return Ok();
         }
+
         [HttpPost, Route("api/Teachers/Import")]
         public IHttpActionResult PostTeachers()
         {
@@ -553,11 +589,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         public IEnumerable<Controller> GetAllControllers()
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            string nameSpace = "ids_elementary_management_system_api.Controllers";
-            Type[] types = assembly.GetTypes()
-                                    .Where(t => string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal))
-                                    .ToArray();
+            Type[] types = BusinessLayer.GetTypesByNamespace("ids_elementary_management_system_api.Controllers");
             List<Controller> controllers = new List<Controller>();
             foreach (Type currentType in types)
             {
@@ -594,8 +626,8 @@ namespace ids_elementary_management_system_api.Controllers
         public IHttpActionResult HasConflict(int DayId, int HourId,
                                              int TeacherId, int ClassId)
         {
-            bool hasConflict = BusinessLayer.HasConflict(DayId, HourId, TeacherId, ClassId);
-            return Ok(hasConflict);
+            List<ClassSchedule> Conflicts = BusinessLayer.Conflicts(DayId, HourId, TeacherId, ClassId);
+            return Ok(Conflicts);
         }
 
     }

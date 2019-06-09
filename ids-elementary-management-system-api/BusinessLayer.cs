@@ -30,6 +30,7 @@ namespace ids_elementary_management_system_api
         #region Members
 
         private static List<ClassSchedule> classSchedules = null;
+        private static List<StudentSchedule> studentSchedules = null;
         private static List<Class> classes = null;
         private static List<Grade> grades = null;
         private static List<Parent> parents = null;
@@ -52,6 +53,17 @@ namespace ids_elementary_management_system_api
                 return classSchedules;
             }
             set { classSchedules = null; }
+
+        }
+        public static List<StudentSchedule> StudentSchedules
+        {
+            get
+            {
+                if (studentSchedules == null)
+                    studentSchedules = GetTable<StudentSchedule>(true).ToList();
+                return studentSchedules;
+            }
+            set { studentSchedules = null; }
 
         }
         public static List<Class> Classes
@@ -237,14 +249,21 @@ namespace ids_elementary_management_system_api
             return result;
         }
 
-        public static bool HasConflict(int DayId, int HourId,
-                                       int TeacherId, int ClassId)
+        public static List<Class> GetTeacherClass(int teacherId)
         {
-            return ClassSchedules.Count(clsSched => clsSched.Day.Id == DayId &&
-                                             clsSched.Hour.Id == HourId &&
-                                             clsSched.Lesson.Teacher.Id == TeacherId &&
-                                             clsSched.Class.Id != ClassId
-                                             )>0;
+            return TeacherClassAccesses.Where(classAccess => classAccess.Teacher.Id == teacherId).
+                                        Select(classAccess=> classAccess.Class).ToList();
+        }
+
+        public static List<ClassSchedule> Conflicts(int DayId, int HourId,
+                                                    int TeacherId, int ClassId)
+        {
+
+            return ClassSchedules.Where(clsSched => clsSched.Day.Id == DayId &&
+                                        clsSched.Hour.Id == HourId &&
+                                        clsSched.Lesson.Teacher.Id == TeacherId &&
+                                        clsSched.Class.Id != ClassId
+                                        ).ToList();
         }
 
         #endregion
@@ -282,6 +301,33 @@ namespace ids_elementary_management_system_api
             return AuthenticatedTeacher;
         }
 
+        public static Dictionary<Tuple<Day, HourInDay>, List<Lesson>> GetTeacherSchedule(int teacherId)
+        {
+            List<ClassSchedule> teacherClassSchedule = ClassSchedules.Where(clsSched => clsSched.Lesson.Teacher.Id == teacherId).ToList();
+            List<StudentSchedule> teacherStudentSchedule = StudentSchedules.Where(studSched => studSched.Lesson.Teacher.Id == teacherId).ToList();
+
+            Dictionary<Tuple<Day, HourInDay>, List<Lesson>> teacherSchedule = new Dictionary<Tuple<Day, HourInDay>, List<Lesson>>();
+            foreach (ClassSchedule currentLesson in teacherClassSchedule)
+            {
+                Tuple<Day, HourInDay> currentTime = new Tuple<Day, HourInDay>(currentLesson.Day, currentLesson.Hour);
+                if (!teacherSchedule.ContainsKey(currentTime))
+                {
+                    teacherSchedule[currentTime] = new List<Lesson>();
+                }
+                teacherSchedule[currentTime].Add(currentLesson.Lesson);
+            }
+            foreach (StudentSchedule currentLesson in teacherStudentSchedule)
+            {
+                Tuple<Day, HourInDay> currentTime = new Tuple<Day, HourInDay>(currentLesson.Day, currentLesson.Hour);
+                if (!teacherSchedule.ContainsKey(currentTime))
+                {
+                    teacherSchedule[currentTime] = new List<Lesson>();
+                }
+                teacherSchedule[currentTime].Add(currentLesson.Lesson);
+            }
+            return teacherSchedule;
+        }
+
         public static int AddModel(Model newItem)
         {
             try
@@ -291,11 +337,7 @@ namespace ids_elementary_management_system_api
                 string columnsNames = string.Join(",", columns.Keys);
                 string columnsValues = string.Join(",", columns.Values);
                 int newID = db.InsertData("insert into " + newItem.TableName + "(" + columnsNames + ") values(" + columnsValues + ")");
-                if (newItem.ListName != null && newItem.ListName != "")
-                {
-                    PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(newItem.ListName);
-                    piLocalDataList.SetValue(null, null);
-                }
+                SetListToUpdate(newItem);
                 newItem.Id = newID;
                 return newID;
             }
@@ -314,16 +356,53 @@ namespace ids_elementary_management_system_api
                 Dictionary<string, string> columns = GetColumns(model);
                 string setString = string.Join(",", columns.Select(col => col.Key + "=" + col.Value).ToArray());
 
-                if (model.ListName != null && model.ListName != "")
-                {
-                    PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(model.ListName);
-                    piLocalDataList.SetValue(null, null);
-                }
+                SetListToUpdate(model);
                 return db.UpdateData("update " + model.TableName + " set " + setString + " where id = " + model.Id);
             }
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        public static bool DeleteModel(Model model)
+        {
+            Type[] types = GetTypesByNamespace("ids_elementary_management_system_api.Models");
+            foreach (Type currentType in types)
+            {
+                PropertyInfo[] properties = currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                foreach (PropertyInfo property in properties)
+                {
+                    if (model.GetType() == property.PropertyType)
+                    {
+                        IList fatherList = (IList)typeof(BusinessLayer).GetMethod("GetTable")
+                            .MakeGenericMethod(currentType).Invoke(null, new object[] { false });
+                        foreach (Model currentFather in fatherList)
+                        {
+                            if (((Model)property.GetValue(currentFather)).Id == model.Id)
+                                DeleteModel(currentFather);
+                        }
+                    }
+                }
+            }
+            SetListToUpdate(model);
+            return DBConnection.Instance.Delete(model.TableName, model.Id); ;
+        }
+
+        public static Type[] GetTypesByNamespace(string nameSpace)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            Type[] types = assembly.GetTypes().Where(t => string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal)).ToArray();
+            return types;
+        }
+
+
+        private static void SetListToUpdate(Model model)
+        {
+            if (model.ListName != null && model.ListName != "")
+            {
+                PropertyInfo piLocalDataList = typeof(BusinessLayer).GetProperty(model.ListName);
+                piLocalDataList.SetValue(null, null);
             }
         }
 

@@ -154,6 +154,28 @@ namespace ids_elementary_management_system_api
             return true;
         }
 
+        public bool Delete(string tableName,int id)
+        {
+            string query = "delete from " + tableName + " where id = " + id;
+            lock (connectionLock)
+            {
+                Connect();
+                if (IsConnected)
+                {
+                    try
+                    {
+                        MySqlCommand command = new MySqlCommand(query, this.connection);
+                        command.ExecuteNonQuery();
+                    }
+                    catch (MySqlException e)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         public DataTable GetDataTableByQuery(string strQuery, bool bWithKey = true)
         {
             lock (connectionLock)

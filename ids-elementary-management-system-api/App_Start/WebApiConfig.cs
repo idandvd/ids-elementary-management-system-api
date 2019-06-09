@@ -12,7 +12,7 @@ namespace ids_elementary_management_system_api
         public static void Register(HttpConfiguration config)
         {
             // Web API configuration and services
-            config.EnableCors(new EnableCorsAttribute("http://localhost:4200", headers: "*", methods: "*"));
+            config.EnableCors(new EnableCorsAttribute("*", headers: "*", methods: "*"));
 
             // Web API routes
             config.MapHttpAttributeRoutes();
@@ -32,11 +32,11 @@ namespace ids_elementary_management_system_api
             //config.Formatters.JsonFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("text/html"));
 
 
-            //config.Routes.MapHttpRoute(
-            //    name: "ActionApi",
-            //    routeTemplate: "api/{controller}/{action}/{id}/{asd}",
-            //    defaults: new { id = RouteParameter.Optional}
-            //);
+            config.Routes.MapHttpRoute(
+                name: "ActionApi",
+                routeTemplate: "api/{controller}/{action}/{id}/{asd}",
+                defaults: new { id = RouteParameter.Optional }
+            );
         }
     }
 }

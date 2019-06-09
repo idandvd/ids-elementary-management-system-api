@@ -34,3 +34,5 @@ C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-sy
 C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Release\ids-elementary-management-system-api.csprojResolveAssemblyReference.cache
 C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Release\ids-elementary-management-system-api.dll
 C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\obj\Release\ids-elementary-management-system-api.pdb
+C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\bin\EPPlus.dll
+C:\Users\Idan\Documents\Visual Studio 2015\Projects\ids-elementary-management-system-api\ids-elementary-management-system-api\bin\EPPlus.xml
