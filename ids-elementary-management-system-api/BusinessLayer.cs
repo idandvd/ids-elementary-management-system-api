@@ -301,31 +301,54 @@ namespace ids_elementary_management_system_api
             return AuthenticatedTeacher;
         }
 
-        public static Dictionary<Tuple<Day, HourInDay>, List<Lesson>> GetTeacherSchedule(int teacherId)
+        public static TeacherScheduleTable GetTeacherSchedule(int teacherId)
         {
-            List<ClassSchedule> teacherClassSchedule = ClassSchedules.Where(clsSched => clsSched.Lesson.Teacher.Id == teacherId).ToList();
-            List<StudentSchedule> teacherStudentSchedule = StudentSchedules.Where(studSched => studSched.Lesson.Teacher.Id == teacherId).ToList();
+            Teacher teacher = GetRow<Teacher>(teacherId);
+            IEnumerable<HourInDay> hours = GetTable<HourInDay>();
+            IEnumerable<Day> days = GetTable<Day>();
 
-            Dictionary<Tuple<Day, HourInDay>, List<Lesson>> teacherSchedule = new Dictionary<Tuple<Day, HourInDay>, List<Lesson>>();
+            List<ClassSchedule> teacherClassSchedule = ClassSchedules.Where(clsSched => clsSched.Lesson.Teacher.Id == teacherId).ToList();
+            List<StudentSchedule> teacherStudentSchedule =
+                StudentSchedules.Where(studSched => studSched.Lesson.Teacher.Id == teacherId).ToList();
+
+            Dictionary < int, Dictionary<int, string>> teacherScheduleClasses =
+                   new Dictionary<int, Dictionary<int, string>>();
             foreach (ClassSchedule currentLesson in teacherClassSchedule)
             {
-                Tuple<Day, HourInDay> currentTime = new Tuple<Day, HourInDay>(currentLesson.Day, currentLesson.Hour);
-                if (!teacherSchedule.ContainsKey(currentTime))
-                {
-                    teacherSchedule[currentTime] = new List<Lesson>();
-                }
-                teacherSchedule[currentTime].Add(currentLesson.Lesson);
+                int dayId = currentLesson.Day.Id;
+                int hourId = currentLesson.Hour.Id;
+                if (!teacherScheduleClasses.ContainsKey(dayId))
+                    teacherScheduleClasses[dayId] = new Dictionary<int, string>();
+                if (!teacherScheduleClasses[dayId].ContainsKey(hourId))
+                    teacherScheduleClasses[dayId][hourId] = "";
+                else
+                    teacherScheduleClasses[dayId][hourId] += Environment.NewLine;
+
+                teacherScheduleClasses[dayId][hourId] += currentLesson.Lesson.Name + " - " +
+                                                         currentLesson.Class.Grade.Name + "'" + currentLesson.Class.Number;
             }
+
             foreach (StudentSchedule currentLesson in teacherStudentSchedule)
             {
-                Tuple<Day, HourInDay> currentTime = new Tuple<Day, HourInDay>(currentLesson.Day, currentLesson.Hour);
-                if (!teacherSchedule.ContainsKey(currentTime))
-                {
-                    teacherSchedule[currentTime] = new List<Lesson>();
-                }
-                teacherSchedule[currentTime].Add(currentLesson.Lesson);
+                int dayId = currentLesson.Day.Id;
+                int hourId = currentLesson.Hour.Id;
+                if (!teacherScheduleClasses.ContainsKey(dayId))
+                    teacherScheduleClasses[dayId] = new Dictionary<int, string>();
+                if (!teacherScheduleClasses[dayId].ContainsKey(hourId))
+                    teacherScheduleClasses[dayId][hourId] = "";
+                else
+                    teacherScheduleClasses[dayId][hourId] += Environment.NewLine;
+
+                teacherScheduleClasses[dayId][hourId] += currentLesson.Lesson.Name ;
             }
-            return teacherSchedule;
+            TeacherScheduleTable teacherScheduleTable = new TeacherScheduleTable()
+            {
+                Teacher = teacher,
+                HoursInDay = hours,
+                Days = days,
+                TeacherScheduleClasses = teacherScheduleClasses
+            };
+            return teacherScheduleTable;
         }
 
         public static int AddModel(Model newItem)

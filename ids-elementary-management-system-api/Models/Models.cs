@@ -238,5 +238,13 @@ namespace ids_elementary_management_system_api.Models
         public IEnumerable<HourInDay> HoursInDay { get; set; }
         public IEnumerable<Day> Days { get; set; }
     }
+    public class TeacherScheduleTable : Model
+    {
+        public Teacher Teacher { get; set; }
+        public Dictionary<int,Dictionary<int,string>> TeacherScheduleClasses { get; set; }
+        //public Dictionary<Tuple<int,int>, Lesson> TeacherScheduleGroups { get; set; }
+        public IEnumerable<HourInDay> HoursInDay { get; set; }
+        public IEnumerable<Day> Days { get; set; }
+    }
 
 }
