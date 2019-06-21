@@ -101,7 +101,11 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<Student>().
                 Where(student => classId == 0 || student.Class.Id == classId).ToList();
         }
-
+        [HttpGet, Route("api/Students/Schedule/{studentId}")]
+        public IHttpActionResult GetTeacherSchedule(int studentId)
+        {
+            return Ok(BusinessLayer.GetStudentSchedule(studentId));
+        }
 
         [HttpPost, Route("api/Students/Import")]
         public IHttpActionResult PostStudent()
@@ -578,6 +582,7 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetAllTablesInformation();
         }
     }
+
     public class ControllersController : ApiController
     {
 
@@ -603,6 +608,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         }
     }
+
     public class ClassScheduleTableController : ApiController
     {
         public IHttpActionResult GetClassSchedule(int id)
@@ -622,7 +628,7 @@ namespace ids_elementary_management_system_api.Controllers
 
         }
 
-        [HttpGet,Route("api/ClassScheduleTable/HasConflict/{DayId}/{HourId}/{TeacherId}/{ClassId}")]
+        [HttpGet, Route("api/ClassScheduleTable/HasConflict/{DayId}/{HourId}/{TeacherId}/{ClassId}")]
         public IHttpActionResult HasConflict(int DayId, int HourId,
                                              int TeacherId, int ClassId)
         {
@@ -630,5 +636,28 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(Conflicts);
         }
 
+    }
+
+    public class GroupsController : ApiController
+    {
+
+        [HttpPost]
+        public IHttpActionResult SaveGroup(Group group)
+        {
+            BusinessLayer.SaveGroup(group);
+            return Ok();
+        }
+
+        [HttpGet, Route("api/Groups/GetGroups/{ClassId}/{DayId}/{HourId}")]
+        public IHttpActionResult GetGroups(int ClassId, int DayId, int HourId)
+        {
+            List<Group> Groups = BusinessLayer.GetGroups(ClassId, DayId, HourId);
+            return Ok(Groups);
+        }
+        public IHttpActionResult DeleteItem(Group group)
+        {
+            BusinessLayer.DeleteGroup(group);
+            return Ok();
+        }
     }
 }

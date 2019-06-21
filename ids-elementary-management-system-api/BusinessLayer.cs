@@ -242,7 +242,7 @@ namespace ids_elementary_management_system_api
                 Class = cls,
                 HoursInDay = hours,
                 Days = days,
-                ClassSchedules = classScheduleLessons
+                ClassSchedule = classScheduleLessons
             };
 
 
@@ -311,20 +311,20 @@ namespace ids_elementary_management_system_api
             List<StudentSchedule> teacherStudentSchedule =
                 StudentSchedules.Where(studSched => studSched.Lesson.Teacher.Id == teacherId).ToList();
 
-            Dictionary < int, Dictionary<int, string>> teacherScheduleClasses =
+            Dictionary < int, Dictionary<int, string>> teacherSchedule =
                    new Dictionary<int, Dictionary<int, string>>();
             foreach (ClassSchedule currentLesson in teacherClassSchedule)
             {
                 int dayId = currentLesson.Day.Id;
                 int hourId = currentLesson.Hour.Id;
-                if (!teacherScheduleClasses.ContainsKey(dayId))
-                    teacherScheduleClasses[dayId] = new Dictionary<int, string>();
-                if (!teacherScheduleClasses[dayId].ContainsKey(hourId))
-                    teacherScheduleClasses[dayId][hourId] = "";
+                if (!teacherSchedule.ContainsKey(dayId))
+                    teacherSchedule[dayId] = new Dictionary<int, string>();
+                if (!teacherSchedule[dayId].ContainsKey(hourId))
+                    teacherSchedule[dayId][hourId] = "";
                 else
-                    teacherScheduleClasses[dayId][hourId] += Environment.NewLine;
+                    teacherSchedule[dayId][hourId] += Environment.NewLine;
 
-                teacherScheduleClasses[dayId][hourId] += currentLesson.Lesson.Name + " - " +
+                teacherSchedule[dayId][hourId] += currentLesson.Lesson.Name + " - " +
                                                          currentLesson.Class.Grade.Name + "'" + currentLesson.Class.Number;
             }
 
@@ -332,23 +332,136 @@ namespace ids_elementary_management_system_api
             {
                 int dayId = currentLesson.Day.Id;
                 int hourId = currentLesson.Hour.Id;
-                if (!teacherScheduleClasses.ContainsKey(dayId))
-                    teacherScheduleClasses[dayId] = new Dictionary<int, string>();
-                if (!teacherScheduleClasses[dayId].ContainsKey(hourId))
-                    teacherScheduleClasses[dayId][hourId] = "";
+                if (!teacherSchedule.ContainsKey(dayId))
+                    teacherSchedule[dayId] = new Dictionary<int, string>();
+                if (!teacherSchedule[dayId].ContainsKey(hourId))
+                    teacherSchedule[dayId][hourId] = "";
                 else
-                    teacherScheduleClasses[dayId][hourId] += Environment.NewLine;
+                    teacherSchedule[dayId][hourId] += Environment.NewLine;
 
-                teacherScheduleClasses[dayId][hourId] += currentLesson.Lesson.Name ;
+                teacherSchedule[dayId][hourId] += currentLesson.Lesson.Name ;
             }
             TeacherScheduleTable teacherScheduleTable = new TeacherScheduleTable()
             {
                 Teacher = teacher,
                 HoursInDay = hours,
                 Days = days,
-                TeacherScheduleClasses = teacherScheduleClasses
+                TeacherSchedule = teacherSchedule
             };
             return teacherScheduleTable;
+        }
+
+        public static StudentScheduleTable GetStudentSchedule(int studentId)
+        {
+            Student student = GetRow<Student>(studentId);
+            IEnumerable<HourInDay> hours = GetTable<HourInDay>();
+            IEnumerable<Day> days = GetTable<Day>();
+
+            List<ClassSchedule> studentClassSchedule = ClassSchedules.Where(clsSched => clsSched.Class.Id== student.Class.Id).ToList();
+            List<StudentSchedule> studentPrivateSchedule = StudentSchedules.Where(studSched => studSched.Student.Id == studentId).ToList();
+
+            Dictionary<int, Dictionary<int, string>> studentSchedule =
+                   new Dictionary<int, Dictionary<int, string>>();
+            foreach (ClassSchedule currentLesson in studentClassSchedule)
+            {
+                int dayId = currentLesson.Day.Id;
+                int hourId = currentLesson.Hour.Id;
+                if (!studentSchedule.ContainsKey(dayId))
+                    studentSchedule[dayId] = new Dictionary<int, string>();
+                if (!studentSchedule[dayId].ContainsKey(hourId))
+                    studentSchedule[dayId][hourId] = "";
+                else
+                    studentSchedule[dayId][hourId] += Environment.NewLine;
+
+                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name+ Environment.NewLine + currentLesson.Lesson.Teacher.FirstName + " "  + currentLesson.Lesson.Teacher.LastName;
+            }
+
+            foreach (StudentSchedule currentLesson in studentPrivateSchedule)
+            {
+                int dayId = currentLesson.Day.Id;
+                int hourId = currentLesson.Hour.Id;
+                if (!studentSchedule.ContainsKey(dayId))
+                    studentSchedule[dayId] = new Dictionary<int, string>();
+
+                // override class schedule when there is a group
+                //if (!studentSchedule[dayId].ContainsKey(hourId))
+                //    studentSchedule[dayId][hourId] = "";
+                //else
+                //    studentSchedule[dayId][hourId] += Environment.NewLine;
+
+                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name;
+            }
+            StudentScheduleTable studentScheduleTable = new StudentScheduleTable()
+            {
+                Student = student,
+                HoursInDay = hours,
+                Days = days,
+                StudentSchedule = studentSchedule
+            };
+            return studentScheduleTable;
+        }
+
+        public static List<Group> GetGroups(int ClassId, int DayId, int HourId)
+        {
+            List<Group> result = new List<Group>();
+            List<List<StudentSchedule>> lst = 
+            StudentSchedules.Where(studSched => studSched.Student.Class.Id == ClassId &&
+                                                studSched.Day.Id == DayId &&
+                                                studSched.Hour.Id == HourId)
+                            .GroupBy(studSched => studSched.Lesson.Id)
+                            .Select(grp => grp.ToList()).ToList();
+
+            
+            foreach (List<StudentSchedule> currentGroupStudents in lst)
+            {
+                List<Student> groupStudents = new List<Student>();
+                foreach (StudentSchedule studentSchedule in currentGroupStudents)
+                {
+                    groupStudents.Add(studentSchedule.Student);
+                }
+                Group group = new Group()
+                {
+                    Day = GetRow<Day>(DayId),
+                    Hour = GetRow<HourInDay>(HourId),
+                    Lesson = currentGroupStudents[0].Lesson,
+                    Students = groupStudents
+                };
+                result.Add(group);
+            }
+
+            return result;
+
+        }
+
+        public static bool SaveGroup(Group group)
+        {
+            StudentSchedule newStudentSchedule = new StudentSchedule()
+            {
+                Day = group.Day,
+                Hour = group.Hour,
+                Lesson = group.Lesson
+            };
+            foreach (Student student in group.Students)
+            {
+                newStudentSchedule.Student = student;
+                AddModel(newStudentSchedule);
+            }
+
+            return true;
+        }
+
+        public static bool DeleteGroup(Group group)
+        {
+            foreach (Student student in group.Students)
+            {
+                StudentSchedule studentScheduleToDelete =
+                    StudentSchedules.FirstOrDefault(studSched => studSched.Day.Id == group.Day.Id &&
+                                                       studSched.Hour.Id == group.Hour.Id &&
+                                                       studSched.Lesson.Id == group.Lesson.Id &&
+                                                       studSched.Student.Id == student.Id);
+                DeleteModel(studentScheduleToDelete);
+            }
+            return true;
         }
 
         public static int AddModel(Model newItem)
@@ -434,7 +547,7 @@ namespace ids_elementary_management_system_api
             string query = "delete from classes_schedules where class_id = " + classScheduleTable.Class.Id + ";";
             query += "insert into classes_schedules(day_id,hour_id,lesson_id,class_id) values( ";
 
-            foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedules)
+            foreach (KeyValuePair<string, Lesson> classSchedule in classScheduleTable.ClassSchedule)
             {
                 if (classSchedule.Value.Id != 0)
                 {

@@ -158,7 +158,7 @@ namespace ids_elementary_management_system_api.Models
     }
     public class StudentSchedule : Model
     {
-        public StudentSchedule() { TableName = "students_schedules"; }
+        public StudentSchedule() { TableName = "students_schedules"; ListName = "StudentSchedules"; }
         public Day Day { get; set; }
         public HourInDay Hour { get; set; }
         public Lesson Lesson { get; set; }
@@ -234,17 +234,31 @@ namespace ids_elementary_management_system_api.Models
     public class ClassScheduleTable : Model
     {
         public Class Class { get; set; }
-        public Dictionary<string, Lesson> ClassSchedules { get; set; }
+        public Dictionary<string, Lesson> ClassSchedule { get; set; }
         public IEnumerable<HourInDay> HoursInDay { get; set; }
         public IEnumerable<Day> Days { get; set; }
     }
     public class TeacherScheduleTable : Model
     {
         public Teacher Teacher { get; set; }
-        public Dictionary<int,Dictionary<int,string>> TeacherScheduleClasses { get; set; }
+        public Dictionary<int, Dictionary<int, string>> TeacherSchedule { get; set; }
         //public Dictionary<Tuple<int,int>, Lesson> TeacherScheduleGroups { get; set; }
         public IEnumerable<HourInDay> HoursInDay { get; set; }
         public IEnumerable<Day> Days { get; set; }
     }
-
+    public class StudentScheduleTable : Model
+    {
+        public Student Student { get; set; }
+        public Dictionary<int, Dictionary<int, string>> StudentSchedule { get; set; }
+        //public Dictionary<Tuple<int,int>, Lesson> TeacherScheduleGroups { get; set; }
+        public IEnumerable<HourInDay> HoursInDay { get; set; }
+        public IEnumerable<Day> Days { get; set; }
+    }
+    public class Group : Model
+    {
+        public Day Day { get; set; }
+        public HourInDay Hour { get; set; }
+        public List<Student> Students { get; set; }
+        public Lesson Lesson { get; set; }
+    }
 }

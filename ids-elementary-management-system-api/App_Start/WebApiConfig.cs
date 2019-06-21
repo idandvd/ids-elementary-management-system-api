@@ -12,7 +12,12 @@ namespace ids_elementary_management_system_api
         public static void Register(HttpConfiguration config)
         {
             // Web API configuration and services
-            config.EnableCors(new EnableCorsAttribute("*", headers: "*", methods: "*"));
+            //config.EnableCors(new EnableCorsAttribute("*", headers: "*", methods: "*"));
+            EnableCorsAttribute enableCorsAttribute =
+            new EnableCorsAttribute("http://resheet.ddns.net", headers: "*", methods: "*");
+            enableCorsAttribute.Origins.Add("http://localhost:4200");
+            config.EnableCors(enableCorsAttribute);
+            
 
             // Web API routes
             config.MapHttpAttributeRoutes();
