@@ -266,6 +266,24 @@ namespace ids_elementary_management_system_api
                                         ).ToList();
         }
 
+        public static List<Class> GetClassesByLesson(int lessonId)
+        {
+            List<Class> result = new List<Class>();
+
+            result.AddRange(
+            ClassSchedules.Where(clsSched => clsSched.Lesson.Id == lessonId)
+                          .Select(clsSched => clsSched.Class)
+                          .Distinct().ToList());
+
+            result.AddRange(
+            StudentSchedules.Where(studSched => studSched.Lesson.Id == lessonId)
+                            .Select(studSched => studSched.Student.Class)
+                            .Distinct().ToList());
+
+            result = result.Distinct().ToList();
+            return result;
+        }
+
         #endregion
 
         public static bool CheckUserExists(string username, string password)
@@ -339,7 +357,15 @@ namespace ids_elementary_management_system_api
                 else
                     teacherSchedule[dayId][hourId] += Environment.NewLine;
 
-                teacherSchedule[dayId][hourId] += currentLesson.Lesson.Name ;
+                string textToAdd = currentLesson.Lesson.Name + " - " +
+                                   currentLesson.Lesson.LessonType.Name + " - " +
+                                   currentLesson.Student.Class.Grade.Name + "'" +
+                                   currentLesson.Student.Class.Number;
+
+                if (!teacherSchedule[dayId][hourId].Contains(textToAdd))
+                    teacherSchedule[dayId][hourId] += textToAdd;
+                else
+                    teacherSchedule[dayId][hourId] = teacherSchedule[dayId][hourId].Substring(0, teacherSchedule[dayId][hourId].Length - 1);
             }
             TeacherScheduleTable teacherScheduleTable = new TeacherScheduleTable()
             {
@@ -373,7 +399,7 @@ namespace ids_elementary_management_system_api
                 else
                     studentSchedule[dayId][hourId] += Environment.NewLine;
 
-                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name+ Environment.NewLine + currentLesson.Lesson.Teacher.FirstName + " "  + currentLesson.Lesson.Teacher.LastName;
+                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name+ " - " + currentLesson.Lesson.Teacher.FirstName + " "  + currentLesson.Lesson.Teacher.LastName;
             }
 
             foreach (StudentSchedule currentLesson in studentPrivateSchedule)
@@ -383,13 +409,13 @@ namespace ids_elementary_management_system_api
                 if (!studentSchedule.ContainsKey(dayId))
                     studentSchedule[dayId] = new Dictionary<int, string>();
 
-                // override class schedule when there is a group
-                //if (!studentSchedule[dayId].ContainsKey(hourId))
-                //    studentSchedule[dayId][hourId] = "";
+                
+                if (studentSchedule[dayId].ContainsKey(hourId))
+                    studentSchedule[dayId][hourId] += Environment.NewLine;
                 //else
-                //    studentSchedule[dayId][hourId] += Environment.NewLine;
+                //    studentSchedule[dayId][hourId] 
 
-                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name;
+                studentSchedule[dayId][hourId] += currentLesson.Lesson.Name + " - " + currentLesson.Lesson.Teacher.FirstName + " " + currentLesson.Lesson.Teacher.LastName + "*"; 
             }
             StudentScheduleTable studentScheduleTable = new StudentScheduleTable()
             {
@@ -401,13 +427,13 @@ namespace ids_elementary_management_system_api
             return studentScheduleTable;
         }
 
-        public static List<Group> GetGroups(int ClassId, int DayId, int HourId)
+        public static List<Group> GetGroups(int ClassId,int DayId,int HourId)
         {
             List<Group> result = new List<Group>();
             List<List<StudentSchedule>> lst = 
             StudentSchedules.Where(studSched => studSched.Student.Class.Id == ClassId &&
-                                                studSched.Day.Id == DayId &&
-                                                studSched.Hour.Id == HourId)
+                                                 studSched.Day.Id == DayId &&
+                                                 studSched.Hour.Id == HourId)
                             .GroupBy(studSched => studSched.Lesson.Id)
                             .Select(grp => grp.ToList()).ToList();
 
@@ -421,8 +447,8 @@ namespace ids_elementary_management_system_api
                 }
                 Group group = new Group()
                 {
-                    Day = GetRow<Day>(DayId),
-                    Hour = GetRow<HourInDay>(HourId),
+                    Day = GetRow<Day>(currentGroupStudents[0].Day.Id),
+                    Hour = GetRow<HourInDay>(currentGroupStudents[0].Hour.Id),
                     Lesson = currentGroupStudents[0].Lesson,
                     Students = groupStudents
                 };
@@ -433,8 +459,63 @@ namespace ids_elementary_management_system_api
 
         }
 
-        public static bool SaveGroup(Group group)
+        public static List<Group> GetGroups(int ClassId)
         {
+            List<Group> result = new List<Group>();
+            List<List<StudentSchedule>> groupsByDays =
+            StudentSchedules.Where(studSched => studSched.Student.Class.Id == ClassId)
+                            .GroupBy(studSched => studSched.Day.Id)
+                            .Select(grp => grp.ToList()).ToList();
+
+
+            foreach (List<StudentSchedule> currentDay in groupsByDays)
+            {
+                List<List<StudentSchedule>> groupsByDaysAndHours =
+                    currentDay.Where(studSched => studSched.Student.Class.Id == ClassId)
+                              .GroupBy(studSched => studSched.Hour.Id)
+                              .Select(grp => grp.ToList()).ToList();
+
+                foreach (List<StudentSchedule> currentHour in groupsByDaysAndHours)
+                {
+                    List<List<StudentSchedule>> groupsByDaysAndHoursAndLessons =
+                        currentHour.Where(studSched => studSched.Student.Class.Id == ClassId)
+                                  .GroupBy(studSched => studSched.Lesson.Id)
+                                  .Select(grp => grp.ToList()).ToList();
+                    foreach (List<StudentSchedule> currentLesson in groupsByDaysAndHoursAndLessons)
+                    {
+                        List<Student> groupStudents = new List<Student>();
+                        foreach (StudentSchedule studentSchedule in currentLesson)
+                        {
+                            groupStudents.Add(studentSchedule.Student);
+                        }
+                        Group group = new Group()
+                        {
+                            Day = GetRow<Day>(currentLesson[0].Day.Id),
+                            Hour = GetRow<HourInDay>(currentLesson[0].Hour.Id),
+                            Lesson = currentLesson[0].Lesson,
+                            Students = groupStudents
+                        };
+                        result.Add(group);
+                    }
+                }
+
+
+
+                
+            }
+
+            return result;
+
+        }
+        /**
+         * returns Tuple of 3 ints
+         * The first is the number of groups that were successfully save
+         * The second is the number of groups that were not save due to an error
+         * The third  is the number of groups that were not save due to a duplication
+         */
+        public static Tuple<int,int,int> SaveGroup(Group group)
+        {
+            int numberOfSuccess = 0, numberOfErrors = 0, numberOfDuplicates = 0;
             StudentSchedule newStudentSchedule = new StudentSchedule()
             {
                 Day = group.Day,
@@ -444,10 +525,16 @@ namespace ids_elementary_management_system_api
             foreach (Student student in group.Students)
             {
                 newStudentSchedule.Student = student;
-                AddModel(newStudentSchedule);
+                int result = AddModel(newStudentSchedule);
+                if (result == 0)
+                    numberOfErrors++;
+                else if (result == -1)
+                    numberOfDuplicates++;
+                else
+                    numberOfSuccess++;
             }
 
-            return true;
+            return new Tuple<int, int,int>(numberOfSuccess, numberOfErrors,numberOfDuplicates);
         }
 
         public static bool DeleteGroup(Group group)
@@ -463,7 +550,12 @@ namespace ids_elementary_management_system_api
             }
             return true;
         }
-
+        /**
+         * returns int
+         * returns 0 if there was an error with saving
+         * returns -1 if there newItem is a duplicate
+         * otherwise returns the new item's Id
+         */
         public static int AddModel(Model newItem)
         {
             try
@@ -479,7 +571,7 @@ namespace ids_elementary_management_system_api
             }
             catch (Exception)
             {
-                return -1;
+                return 0;
             }
 
         }
@@ -531,7 +623,6 @@ namespace ids_elementary_management_system_api
             Type[] types = assembly.GetTypes().Where(t => string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal)).ToArray();
             return types;
         }
-
 
         private static void SetListToUpdate(Model model)
         {

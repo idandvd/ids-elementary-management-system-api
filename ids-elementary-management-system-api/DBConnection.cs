@@ -88,6 +88,12 @@ namespace ids_elementary_management_system_api
             connection.Close();
         }
 
+        /**
+         * returns int
+         * returns 0 if there was an error with saving
+         * returns -1 if there is a duplication
+         * otherwise returns the new item's Id
+         */
         public int InsertData(string query)
         {
             int nInsertID = 0;
@@ -104,6 +110,8 @@ namespace ids_elementary_management_system_api
                     }
                     catch (MySqlException e)
                     {
+                        if (e.Message.ToLower().Contains("duplicate"))
+                            return -1;
                         return nInsertID;
                     }
                 }

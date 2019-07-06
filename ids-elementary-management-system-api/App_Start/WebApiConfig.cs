@@ -16,6 +16,7 @@ namespace ids_elementary_management_system_api
             EnableCorsAttribute enableCorsAttribute =
             new EnableCorsAttribute("http://resheet.ddns.net", headers: "*", methods: "*");
             enableCorsAttribute.Origins.Add("http://localhost:4200");
+            //new EnableCorsAttribute("*", headers: "*", methods: "*");
             config.EnableCors(enableCorsAttribute);
             
 

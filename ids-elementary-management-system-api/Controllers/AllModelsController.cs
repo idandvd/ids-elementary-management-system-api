@@ -39,7 +39,7 @@ namespace ids_elementary_management_system_api.Controllers
                 if (!editSucceeded)
                     return InternalServerError();
             }
-            return Ok();
+            return Ok(item.Id);
         }
 
 
@@ -138,6 +138,15 @@ namespace ids_elementary_management_system_api.Controllers
         {
             return BusinessLayer.GetTable<Class>();
         }
+
+
+
+        [HttpGet, Route("api/Classes/GetClassesByLesson/{lessonId}")]
+        public IHttpActionResult GetClassesByLesson(int lessonId)
+        {
+            
+            return Ok(BusinessLayer.GetClassesByLesson(lessonId));
+        }
     }
 
     public class ClassSchedulesController : ApiController
@@ -156,13 +165,11 @@ namespace ids_elementary_management_system_api.Controllers
             return BusinessLayer.GetTable<ClassSchedule>();
         }
 
-
-
     }
 
     public class DaysController : ApiController
     {
-        public IHttpActionResult GetStudent(int id)
+        public IHttpActionResult GetDay(int id)
         {
             Day result = BusinessLayer.GetRow<Day>(id);
             if (result == null)
@@ -170,7 +177,7 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
-        public IEnumerable<Day> GetAllStudents()
+        public IEnumerable<Day> GetAllDays()
         {
             return BusinessLayer.GetTable<Day>();
         }
@@ -260,9 +267,11 @@ namespace ids_elementary_management_system_api.Controllers
 
     }
 
-    public class LessonEvaluationsController : ApiController
+    public class LessonEvaluationsController : BaseApiController
     {
-        public IHttpActionResult GetStudent(int id)
+        public LessonEvaluationsController() { modelType = typeof(LessonEvaluation); }
+
+        public IHttpActionResult GetLessonEvaluation(int id)
         {
             LessonEvaluation result = BusinessLayer.GetRow<LessonEvaluation>(id);
             if (result == null)
@@ -270,14 +279,16 @@ namespace ids_elementary_management_system_api.Controllers
             return Ok(result);
         }
 
-        public IEnumerable<LessonEvaluation> GetAllStudents()
+        public IEnumerable<LessonEvaluation> GetAllLessonEvaluations()
         {
             return BusinessLayer.GetTable<LessonEvaluation>();
         }
     }
 
-    public class LessonGradesController : ApiController
+    public class LessonGradesController : BaseApiController
     {
+        public LessonGradesController() { modelType = typeof(LessonGrade); }
+
         public IHttpActionResult GetLessonGrade(int id)
         {
             LessonGrade result = BusinessLayer.GetRow<LessonGrade>(id);
@@ -514,8 +525,9 @@ namespace ids_elementary_management_system_api.Controllers
         }
     }
 
-    public class UsersController : ApiController
+    public class UsersController : BaseApiController
     {
+        public UsersController() { modelType = typeof(User); }
         public IHttpActionResult GetUser(int id)
         {
             User result = BusinessLayer.GetRow<User>(id);
@@ -644,16 +656,28 @@ namespace ids_elementary_management_system_api.Controllers
         [HttpPost]
         public IHttpActionResult SaveGroup(Group group)
         {
-            BusinessLayer.SaveGroup(group);
-            return Ok();
+            Tuple<int,int,int> result = BusinessLayer.SaveGroup(group);
+            if (result.Item1 == 0)
+            {
+                return InternalServerError();
+            }
+            return Ok(result);
+            
         }
 
-        [HttpGet, Route("api/Groups/GetGroups/{ClassId}/{DayId}/{HourId}")]
-        public IHttpActionResult GetGroups(int ClassId, int DayId, int HourId)
+        [HttpGet, Route("api/Groups/GetGroupsByTime/{ClassId}/{DayId}/{HourId}")]
+        public IHttpActionResult GetGroupsByTime(int ClassId, int DayId, int HourId)
         {
             List<Group> Groups = BusinessLayer.GetGroups(ClassId, DayId, HourId);
             return Ok(Groups);
         }
+        [HttpGet, Route("api/Groups/GetGroupsByClass/{ClassId}")]
+        public IHttpActionResult GetGroupsByClass(int ClassId)
+        {
+            List<Group> Groups = BusinessLayer.GetGroups(ClassId);
+            return Ok(Groups);
+        }
+
         public IHttpActionResult DeleteItem(Group group)
         {
             BusinessLayer.DeleteGroup(group);

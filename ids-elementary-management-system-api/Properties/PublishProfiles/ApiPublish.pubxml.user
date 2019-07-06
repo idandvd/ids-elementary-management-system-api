@@ -16,7 +16,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>12/21/2017 21:23:44</publishTime>
     </File>
     <File Include="bin/ids-elementary-management-system-api.dll">
-      <publishTime>06/21/2019 18:39:26</publishTime>
+      <publishTime>07/07/2019 00:12:58</publishTime>
     </File>
     <File Include="bin/Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll">
       <publishTime>06/15/2015 02:06:24</publishTime>
